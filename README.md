@@ -144,4 +144,4 @@ flutter run
 
 ---
 
-<p align="center">Hecho con en México</p>
+<p align="center">Hecho en México</p>
