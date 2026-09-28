@@ -42,24 +42,28 @@ vía JSON.
    ```bash
    cp .env.example .env
    ```
-3. Instalar dependencias:
+   ó
+   ```bash
+   copy .env.example .env
+   ```
+4. Instalar dependencias:
    ```bash
    npm install
    ```
-4. Habilitar PostGIS en la base (una sola vez):
+5. Habilitar PostGIS en la base (una sola vez):
    ```sql
    CREATE EXTENSION IF NOT EXISTS postgis;
    ```
-5. Generar el cliente de Prisma y correr las migraciones:
+6. Generar el cliente de Prisma y correr las migraciones:
    ```bash
    npx prisma generate
    npx prisma migrate dev --name init
    ```
-6. Cargar la curaduría inicial (estados, categorías y lugares de ejemplo, incluyendo las ciudades más importantes de México):
+7. Cargar la curaduría inicial (estados, categorías y lugares de ejemplo, incluyendo las ciudades más importantes de México):
    ```bash
    npx prisma db seed
    ```
-7. Levantar el servidor en modo desarrollo:
+8. Levantar el servidor en modo desarrollo:
    ```bash
    npm run start:dev
    ```
