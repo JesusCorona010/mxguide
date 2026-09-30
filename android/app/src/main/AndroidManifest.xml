@@ -1,8 +1,19 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Notificaciones por cercanía: ubicación del usuario y permiso de
+         notificaciones (obligatorio a partir de Android 13). -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Para conectarse al backend por HTTP. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="mx_guide"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true">
+        <!-- usesCleartextTraffic: el backend corre en http:// (sin TLS)
+             mientras están en desarrollo. Sin esto, Android 9+ bloquea la
+             conexión. Quítalo si algún día el backend queda en https://. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"

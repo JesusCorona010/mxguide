@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../data/mock_places.dart';
+import '../data/mock_places.dart' show placeCategories, mexicanStates;
 import '../models/place.dart';
+import '../services/place_service.dart';
 import '../theme/app_colors.dart';
-import '../theme/theme_controller.dart';
 import '../widgets/place_card.dart';
 
 /// Pestaña "Explorar": buscador, filtros por categoría y estado, y lista de lugares.
@@ -19,8 +19,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   final _searchController = TextEditingController();
 
-  // TODO(backend): cargar desde la API en lugar de los datos de prueba.
-  final List<Place> _places = mockPlaces;
+  List<Place> _places = [];
+  bool _loading = true;
+  String? _error;
 
   String _query = '';
   String _category = placeCategories.first; // 'Todas'
@@ -28,9 +29,36 @@ class _ExploreScreenState extends State<ExploreScreen> {
   final Set<String> _favorites = {};
 
   @override
+  void initState() {
+    super.initState();
+    _loadPlaces();
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadPlaces({bool forceRefresh = false}) async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final places = await PlaceService.instance.fetchPlaces(forceRefresh: forceRefresh);
+      if (!mounted) return;
+      setState(() {
+        _places = places;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'No se pudo conectar con el servidor. Revisa que el backend esté corriendo.';
+        _loading = false;
+      });
+    }
   }
 
   // ───────────── Filtros ─────────────
@@ -96,10 +124,67 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const SafeArea(child: Center(child: CircularProgressIndicator()));
+    }
+
+    if (_error != null) {
+      return SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.cloud_off_rounded, size: 48, color: Theme.of(context).colorScheme.error),
+                const SizedBox(height: 12),
+                Text(_error!, textAlign: TextAlign.center),
+                const SizedBox(height: 12),
+                FilledButton(
+                  onPressed: () => _loadPlaces(forceRefresh: true),
+                  child: const Text('Reintentar'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final places = _filteredPlaces;
 
     return SafeArea(
       bottom: false,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // La celda de la grilla mezcla una imagen que escala con el ancho
+          // (aspect ratio 1.1) y un texto de alto fijo debajo. Un
+          // childAspectRatio fijo no puede describir eso a la vez en celular
+          // y en una ventana ancha de escritorio — por eso antes quedaba un
+          // hueco negro abajo del texto en pantallas anchas. Aquí se calcula
+          // el alto exacto de la celda (imagen + texto) según el ancho real
+          // disponible, para que siempre cierre justo, sin importar el
+          // tamaño de pantalla.
+          const crossAxisCount = 2;
+          const horizontalPadding = 20.0; // el mismo de SliverPadding de abajo
+          const crossAxisSpacing = 12.0;
+          const imageAspectRatio = 1.1; // debe hacer match con PlaceCard(dense: true)
+          const textBlockHeight = 56.0; // padding (8+8) + hasta 2 líneas de texto
+
+          final gridWidth = constraints.maxWidth - horizontalPadding * 2;
+          final columnWidth =
+              (gridWidth - crossAxisSpacing * (crossAxisCount - 1)) / crossAxisCount;
+          final cardHeight = columnWidth / imageAspectRatio + textBlockHeight;
+
+          return _buildContent(places, crossAxisCount, cardHeight);
+        },
+      ),
+    );
+  }
+
+  Widget _buildContent(List<Place> places, int crossAxisCount, double cardHeight) {
+    return RefreshIndicator(
+      onRefresh: () => _loadPlaces(forceRefresh: true),
       child: CustomScrollView(
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         slivers: [
@@ -156,18 +241,28 @@ class _ExploreScreenState extends State<ExploreScreen> {
             SliverPadding(
               // Espacio extra abajo para que el botón "+" no tape la última tarjeta.
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-              sliver: SliverList.separated(
-                itemCount: places.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 14),
-                itemBuilder: (context, index) {
-                  final place = places[index];
-                  return PlaceCard(
-                    place: place,
-                    isFavorite: _favorites.contains(place.id),
-                    onFavoriteTap: () => _toggleFavorite(place),
-                    onTap: () => _openPlace(place),
-                  );
-                },
+              sliver: SliverGrid(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  // Alto exacto (no un aspect ratio fijo) para que la celda
+                  // cierre justo con la imagen + el texto, sin hueco extra.
+                  mainAxisExtent: cardHeight,
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final place = places[index];
+                    return PlaceCard(
+                      place: place,
+                      isFavorite: _favorites.contains(place.id),
+                      onFavoriteTap: () => _toggleFavorite(place),
+                      onTap: () => _openPlace(place),
+                      dense: true,
+                    );
+                  },
+                  childCount: places.length,
+                ),
               ),
             ),
         ],
@@ -176,7 +271,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 }
 
-/// "MXGuide" + saludo + botón para cambiar entre claro y oscuro.
+/// "MXGuide" + saludo. El botón de tema y la campanita de notificaciones
+/// viven flotando en HomeScreen (arriba de todas las pestañas), no aquí.
 class _Header extends StatelessWidget {
   const _Header();
 
@@ -184,39 +280,24 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
 
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        Text.rich(
+          TextSpan(
             children: [
-              Text.rich(
-                TextSpan(
-                  children: [
-                    const TextSpan(text: 'M'),
-                    TextSpan(text: 'X', style: TextStyle(color: colors.secondary)),
-                    const TextSpan(text: 'Guide'),
-                  ],
-                ),
-                style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                '¿A dónde vamos hoy?',
-                style: theme.textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
-              ),
+              const TextSpan(text: 'M'),
+              TextSpan(text: 'X', style: TextStyle(color: colors.secondary)),
+              const TextSpan(text: 'Guide'),
             ],
           ),
+          style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
         ),
-        IconButton(
-          tooltip: isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro',
-          onPressed: () => themeController.toggle(theme.brightness),
-          icon: Icon(
-            isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-            color: colors.primary,
-          ),
+        const SizedBox(height: 2),
+        Text(
+          '¿A dónde vamos hoy?',
+          style: theme.textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
         ),
       ],
     );
