@@ -52,6 +52,7 @@ model Place {
   categories        PlaceCategory[]
   favorites         Favorite[]
   reviews           Review[]
+  thumbnail         PlaceThumbnail? // nuevo campo agregado (daba error)
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 }
@@ -76,7 +77,8 @@ model PlaceImage {
 model User {
   id           String     @id @default(uuid())
   email        String     @unique
-  passwordHash String
+  passwordHash String?  // Opcional para usuarios que se registran con Google
+  googleId     String?  @unique // Identificador único de la cuenta de Google
   name         String
   role         Role       @default(user)
   favorites    Favorite[]

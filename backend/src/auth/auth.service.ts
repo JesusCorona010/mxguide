@@ -35,8 +35,50 @@ export class AuthService {
     });
     if (!user) throw new UnauthorizedException('Credenciales inválidas');
 
+    // NUEVA VALIDACIÓN: Si el usuario existe pero no tiene contraseña, es un usuario de Google
+    if (!user.passwordHash) {
+      throw new UnauthorizedException('Esta cuenta está vinculada a Google. Por favor, inicia sesión con Google.');
+    }
+
     const valid = await bcrypt.compare(dto.password, user.passwordHash);
     if (!valid) throw new UnauthorizedException('Credenciales inválidas');
+
+    return this.buildTokenResponse(user.id, user.email, user.role);
+  }
+
+  /**
+   * Procesa el inicio de sesión o registro automático vía Google OAuth.
+   * @param {any} googleUser - Perfil extraído por GoogleStrategy.
+   * @returns {Promise<{accessToken: string}>} Token JWT de acceso de MXGuide.
+   */
+  async googleLogin(googleUser: any) {
+    if (!googleUser) {
+      throw new UnauthorizedException('No se recibió información de Google');
+    }
+
+    const { email, name, googleId } = googleUser;
+
+    let user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      // El usuario es totalmente nuevo, lo registramos.
+      user = await this.prisma.user.create({
+        data: {
+          email,
+          name,
+          googleId,
+          // passwordHash queda null automáticamente
+        },
+      });
+    } else if (!user.googleId) {
+      // El usuario existía por registro tradicional, vinculamos su cuenta de Google.
+      user = await this.prisma.user.update({
+        where: { email },
+        data: { googleId },
+      });
+    }
 
     return this.buildTokenResponse(user.id, user.email, user.role);
   }
