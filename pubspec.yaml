@@ -37,11 +37,14 @@ dependencies:
   google_fonts: ^8.2.1
 
   # Notificaciones por cercanía: ubicación del usuario + notificaciones locales.
-  geolocator: ^13.0.2
+  geolocator: ^14.1.1
   flutter_local_notifications: ^18.0.1
 
   # Conexión con el backend (NestJS).
   http: ^1.2.2
+  flutter_map: ^8.3.2
+  latlong2: ^0.10.1
+  url_launcher: ^6.3.3
 
 dev_dependencies:
   flutter_test:
