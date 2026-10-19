@@ -1,5 +1,8 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../services/api_client.dart';
+import '../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -49,30 +52,42 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _login() async {
     if (_isBusy) return;
     FocusScope.of(context).unfocus();
-    // if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
-
-    // TODO(backend): aquí va la llamada real de autenticación.
-    // Por ahora simulamos una espera y navegamos directo.
-    await Future.delayed(const Duration(milliseconds: 1200));
-
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-    _goToHome();
+    try {
+      await AuthService.instance.login(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+      if (!mounted) return;
+      _goToHome();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      _showError(e.message);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _loginWithGoogle() async {
     if (_isBusy) return;
-    FocusScope.of(context).unfocus();
-    setState(() => _isGoogleLoading = true);
+    // TODO(backend): la API todavía no tiene una ruta para iniciar con Google.
+    _showComingSoon('El inicio de sesión con Google');
+  }
 
-    // TODO(backend): aquí va el flujo de Google Sign-In.
-    await Future.delayed(const Duration(milliseconds: 1200));
+  void _goToRegister() => Navigator.of(context).pushNamed('/register');
 
-    if (!mounted) return;
-    setState(() => _isGoogleLoading = false);
-    _goToHome();
+  void _showError(String message) {
+    final colors = Theme.of(context).colorScheme;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          backgroundColor: colors.error,
+          content: Text(message, style: TextStyle(color: colors.onError)),
+        ),
+      );
   }
 
   void _goToHome() => Navigator.of(context).pushReplacementNamed('/home');
@@ -103,7 +118,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: ConstrainedBox(
                   // Centra el contenido verticalmente, pero permite scroll
                   // cuando aparece el teclado.
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight - 48),
+                  constraints: BoxConstraints(minHeight: math.max(0, constraints.maxHeight - 48)),
                   child: Center(
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 420),
@@ -244,8 +259,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Text('¿No tienes cuenta?', style: TextStyle(color: colors.onSurfaceVariant)),
         TextButton(
           style: TextButton.styleFrom(foregroundColor: colors.secondary),
-          // TODO: cambiar por Navigator.pushNamed(context, '/register') cuando exista.
-          onPressed: () => _showComingSoon('El registro'),
+          onPressed: _goToRegister,
           child: const Text('Regístrate'),
         ),
       ],

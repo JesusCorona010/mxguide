@@ -1,10 +1,12 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../data/mock_map_points.dart';
 import '../models/map_point.dart';
+import '../services/api_client.dart';
+import '../services/places_repository.dart';
 import '../theme/app_colors.dart';
 import '../theme/theme_controller.dart';
 import '../utils/text_utils.dart';
@@ -18,9 +20,10 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-  // Centro de Puebla mientras no tengamos la ubicación del usuario.
-  static final _defaultCenter = LatLng(19.0433, -98.1981);
-  static const _defaultZoom = 15.0;
+  // Vista de todo México mientras no tengamos la ubicación del usuario.
+  static final _defaultCenter = LatLng(23.6345, -102.5528);
+  static const _defaultZoom = 5.0;
+  static const _closeZoom = 14.0;
 
   // Mapas gratuitos de CARTO (basados en OpenStreetMap), claro y oscuro.
   static const _lightTiles = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png';
@@ -29,8 +32,10 @@ class _MapScreenState extends State<MapScreen> {
   final _mapController = MapController();
   final _searchController = TextEditingController();
 
-  // TODO(backend): cargar desde GET /places/nearby con la ubicación del usuario.
-  final List<MapPoint> _points = mockMapPoints;
+  // Por ahora la API solo tiene lugares turísticos.
+  // TODO(backend): agregar hoteles y restaurantes cuando existan en la API.
+  List<MapPoint> _points = const [];
+  bool _isLoadingPoints = true;
 
   final Set<MapPointType> _activeTypes = {...MapPointType.values};
   String _query = '';
@@ -41,7 +46,41 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void initState() {
     super.initState();
-    _selected = _points.isNotEmpty ? _points.first : null;
+    _loadPoints();
+  }
+
+  Future<void> _loadPoints() async {
+    setState(() => _isLoadingPoints = true);
+    try {
+      final catalog = await PlacesRepository.instance.loadCatalog();
+      if (!mounted) return;
+      setState(() {
+        _points = [
+          for (final place in catalog.places)
+            MapPoint(
+              id: place.id,
+              name: place.name,
+              type: MapPointType.place,
+              latitude: place.latitude,
+              longitude: place.longitude,
+              subtitle: [place.category, place.state].where((t) => t.isNotEmpty).join(' · '),
+              imageUrl: place.imageUrl,
+            ),
+        ];
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            action: SnackBarAction(label: 'Reintentar', onPressed: _loadPoints),
+          ),
+        );
+    } finally {
+      if (mounted) setState(() => _isLoadingPoints = false);
+    }
   }
 
   @override
@@ -94,7 +133,9 @@ class _MapScreenState extends State<MapScreen> {
 
   void _selectPoint(MapPoint point, {bool moveMap = true}) {
     setState(() => _selected = point);
-    if (moveMap) _mapController.move(point.location, _mapController.camera.zoom);
+    if (moveMap) {
+      _mapController.move(point.location, math.max(_mapController.camera.zoom, _closeZoom));
+    }
   }
 
   void _toggleType(MapPointType type) {
@@ -142,7 +183,7 @@ class _MapScreenState extends State<MapScreen> {
 
       final location = LatLng(position.latitude, position.longitude);
       setState(() => _userLocation = location);
-      _mapController.move(location, _defaultZoom);
+      _mapController.move(location, _closeZoom);
     } catch (_) {
       if (mounted) _showMessage('No pudimos obtener tu ubicación');
     } finally {
@@ -191,6 +232,8 @@ class _MapScreenState extends State<MapScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final points = _visiblePoints;
     final user = _userLocation;
+    // Los chips solo tienen sentido si hay más de un tipo de punto.
+    final hasSeveralTypes = _points.map((p) => p.type).toSet().length > 1;
 
     return Column(
       children: [
@@ -263,8 +306,14 @@ class _MapScreenState extends State<MapScreen> {
                             setState(() => _query = '');
                           },
                         ),
-                        const SizedBox(height: 10),
-                        _LayerChips(active: _activeTypes, onToggle: _toggleType),
+                        if (hasSeveralTypes) ...[
+                          const SizedBox(height: 10),
+                          _LayerChips(active: _activeTypes, onToggle: _toggleType),
+                        ],
+                        if (_isLoadingPoints) ...[
+                          const SizedBox(height: 10),
+                          const _LoadingPill(),
+                        ],
                       ],
                     ),
                   ),
@@ -720,6 +769,34 @@ class _NearbyListSheet extends StatelessWidget {
                   ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Pastilla pequeña de "Cargando lugares..." sobre el mapa.
+class _LoadingPill extends StatelessWidget {
+  const _LoadingPill();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    return Material(
+      color: colors.surface,
+      elevation: 3,
+      shadowColor: Colors.black38,
+      shape: const StadiumBorder(),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+            const SizedBox(width: 10),
+            Text('Cargando lugares...', style: theme.textTheme.bodyMedium),
+          ],
+        ),
       ),
     );
   }

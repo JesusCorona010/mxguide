@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
-
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/register_screen.dart';
+import 'services/auth_service.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_controller.dart';
+import 'screens/splash_screen.dart';
 
-// 👉 Para usar tu splash, descomenta este import
-//    (ajusta el nombre de la clase si tu splash no se llama SplashScreen):
-// import 'screens/splash_screen.dart';
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-void main() {
+  // Si el usuario ya había iniciado sesión, entra directo al Home.
+  await AuthService.instance.restoreSession();
+
   runApp(const MxGuideApp());
 }
 
@@ -31,12 +34,14 @@ class MxGuideApp extends StatelessWidget {
           darkTheme: AppTheme.dark,
           themeMode: themeMode,
 
-          initialRoute: '/login',
+          initialRoute: AuthService.instance.isLoggedIn ? '/home' : '/login',
           routes: {
-            // 👉 Para arrancar con tu splash: descomenta la línea de abajo
-            //    y cambia initialRoute a '/'.
+            // 👉 Para arrancar con tu splash: descomenta la línea de abajo,
+            //    cambia initialRoute a '/' y que el splash decida a dónde ir
+            //    con AuthService.instance.isLoggedIn.
             // '/': (_) => const SplashScreen(),
             '/login': (_) => const LoginScreen(),
+            '/register': (_) => const RegisterScreen(),
             '/home': (_) => const HomeScreen(),
           },
         );
