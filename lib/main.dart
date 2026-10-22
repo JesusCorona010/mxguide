@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'services/auth_service.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_controller.dart';
-import 'screens/splash_screen.dart';
+
+// 👉 Para usar tu splash, descomenta este import
+//    (ajusta el nombre de la clase si tu splash no se llama SplashScreen):
+// import 'screens/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,6 +37,15 @@ class MxGuideApp extends StatelessWidget {
           theme: AppTheme.light,
           darkTheme: AppTheme.dark,
           themeMode: themeMode,
+
+          // Idioma de la app: español de México.
+          locale: const Locale('es', 'MX'),
+          supportedLocales: const [Locale('es', 'MX'), Locale('es')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
 
           initialRoute: AuthService.instance.isLoggedIn ? '/home' : '/login',
           routes: {
