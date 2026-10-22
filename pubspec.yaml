@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+2
+version: 1.0.0+3
 
 environment:
   sdk: '^3.13.0'
@@ -43,6 +43,7 @@ dependencies:
   # Conexión con el backend (NestJS).
   http: ^1.6.0
   flutter_map: ^8.3.2
+  google_maps_flutter: ^2.10.0
   latlong2: ^0.10.1
   url_launcher: ^6.3.3
   shared_preferences: ^2.5.6
@@ -58,8 +59,20 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
 
+  # Genera el ícono de la app (launcher) a partir del logo.
+  flutter_launcher_icons: ^0.14.4
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
+
+# Ícono de la app: se genera con `dart run flutter_launcher_icons`
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/images/mxguide_icono.png"
+  adaptive_icon_background: "#00796B"
+  adaptive_icon_foreground: "assets/images/mxguide_icono.png"
+  adaptive_icon_foreground_inset: 16
 
 # The following section is specific to Flutter packages.
 flutter:

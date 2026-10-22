@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
+<<<<<<< HEAD
 import 'services/auth_service.dart';
+=======
+>>>>>>> 90b522e (Conexion con Backend)
 import 'theme/app_theme.dart';
 import 'theme/theme_controller.dart';
 import 'screens/splash_screen.dart';
