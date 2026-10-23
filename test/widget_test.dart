@@ -1,30 +1,22 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:mx_guide/main.dart';
+import 'package:mx_guide/models/app_user.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  group('AppUser', () {
+    AppUser user(String name) => AppUser(id: '1', email: 'a@b.com', name: name, role: 'user');
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    test('saca las iniciales del nombre', () {
+      expect(user('Jesús Corona').initials, 'JC');
+      expect(user('jesus').initials, 'J');
+      expect(user('   ').initials, '?');
+    });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    test('detecta si es admin', () {
+      expect(user('Ana').isAdmin, isFalse);
+      expect(
+        const AppUser(id: '1', email: '', name: 'Ana', role: 'admin').isAdmin,
+        isTrue,
+      );
+    });
   });
 }

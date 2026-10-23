@@ -72,7 +72,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _loginWithGoogle() async {
     if (_isBusy) return;
-<<<<<<< HEAD
     // TODO(backend): la API todavía no tiene una ruta para iniciar con Google.
     _showComingSoon('El inicio de sesión con Google');
   }
@@ -89,11 +88,6 @@ class _LoginScreenState extends State<LoginScreen> {
           content: Text(message, style: TextStyle(color: colors.onError)),
         ),
       );
-=======
-    // El inicio de sesión con Google aún no está conectado al backend.
-    // En vez de entrar "de mentiras", avisamos que viene pronto.
-    _showComingSoon('Iniciar sesión con Google');
->>>>>>> 90b522e (Conexion con Backend)
   }
 
   void _goToHome() => Navigator.of(context).pushReplacementNamed('/home');
@@ -265,11 +259,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Text('¿No tienes cuenta?', style: TextStyle(color: colors.onSurfaceVariant)),
         TextButton(
           style: TextButton.styleFrom(foregroundColor: colors.secondary),
-<<<<<<< HEAD
-          onPressed: _goToRegister,
-=======
-          onPressed: _isBusy ? null : () => Navigator.of(context).pushNamed('/register'),
->>>>>>> 90b522e (Conexion con Backend)
+          onPressed: _isBusy ? null : _goToRegister,
           child: const Text('Regístrate'),
         ),
       ],

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -39,38 +38,11 @@ class AuthService extends ChangeNotifier {
     await _startSession(data);
   }
 
-=======
-import 'dart:convert';
-
-import 'package:http/http.dart' as http;
-
-import 'api_config.dart';
-
-class AuthException implements Exception {
-  AuthException(this.message);
-  final String message;
-
-  @override
-  String toString() => message;
-}
-
-/// Habla con /auth del backend (NestJS).
-class AuthService {
-  AuthService._();
-
-  static final AuthService instance = AuthService._();
-
-  /// POST /auth/register
-  ///
-  /// Si el RegisterDto del backend usa otros nombres de campo, cámbialos
-  /// SOLO en el `body` de abajo.
->>>>>>> 90b522e (Conexion con Backend)
   Future<void> register({
     required String name,
     required String email,
     required String password,
   }) async {
-<<<<<<< HEAD
     final data = await _api.post(
       '/auth/register',
       body: {'name': name, 'email': email, 'password': password},
@@ -113,42 +85,3 @@ class AuthService {
     await refreshUser();
   }
 }
-=======
-    final uri = Uri.parse('${ApiConfig.baseUrl}/auth/register');
-
-    final http.Response response;
-    try {
-      response = await http
-          .post(
-            uri,
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'name': name,
-              'email': email,
-              'password': password,
-            }),
-          )
-          .timeout(ApiConfig.timeout);
-    } catch (_) {
-      throw AuthException(
-        'No se pudo conectar con el servidor. Revisa tu internet e intenta de nuevo.',
-      );
-    }
-
-    if (response.statusCode == 200 || response.statusCode == 201) return;
-
-    throw AuthException(_extractMessage(response));
-  }
-
-  String _extractMessage(http.Response response) {
-    try {
-      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
-      final msg = decoded is Map ? decoded['message'] : null;
-      if (msg is List && msg.isNotEmpty) return msg.join('\n');
-      if (msg is String && msg.isNotEmpty) return msg;
-    } catch (_) {}
-    if (response.statusCode == 409) return 'Ese correo ya está registrado';
-    return 'Error del servidor (${response.statusCode})';
-  }
-}
->>>>>>> 90b522e (Conexion con Backend)

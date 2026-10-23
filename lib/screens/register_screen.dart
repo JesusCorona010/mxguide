@@ -1,16 +1,9 @@
-<<<<<<< HEAD
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 
 /// Crear cuenta con nombre, correo y contraseña (POST /auth/register).
-=======
-import 'package:flutter/material.dart';
-
-import '../services/auth_service.dart';
-
->>>>>>> 90b522e (Conexion con Backend)
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -25,11 +18,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
 
-<<<<<<< HEAD
   bool _obscurePassword = true;
-=======
-  bool _obscure = true;
->>>>>>> 90b522e (Conexion con Backend)
   bool _isLoading = false;
 
   @override
@@ -40,36 +29,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _confirmController.dispose();
     super.dispose();
   }
-
-<<<<<<< HEAD
   // ───────────── Validaciones (las mismas reglas que el backend) ─────────────
 
-  String? _validateName(String? value) {
-    if ((value ?? '').trim().length < 2) return 'Escribe tu nombre';
-    return null;
-  }
-
-  String? _validateEmail(String? value) {
-    final email = value?.trim() ?? '';
-    if (email.isEmpty) return 'Ingresa tu correo electrónico';
-    if (!RegExp(r'^[\w.+-]+@[\w-]+\.[\w.-]+$').hasMatch(email)) return 'Ingresa un correo válido';
-    return null;
-  }
-
-  String? _validatePassword(String? value) {
-    if (value == null || value.length < 6) return 'Debe tener al menos 6 caracteres';
-    return null;
-  }
-
-  String? _validateConfirm(String? value) {
-    if (value != _passwordController.text) return 'Las contraseñas no coinciden';
-    return null;
-  }
-
-  // ───────────── Acciones ─────────────
-=======
   String? _validateName(String? v) {
-    if ((v?.trim() ?? '').isEmpty) return 'Ingresa tu nombre';
+    final name = v?.trim() ?? '';
+    if (name.isEmpty) return 'Ingresa tu nombre';
+    if (name.length < 2) return 'Tu nombre es muy corto';
     return null;
   }
 
@@ -93,12 +58,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return null;
   }
 
-  void _snack(String text) {
+  // ───────────── Acciones ─────────────
+
+  void _showError(String message) {
+    final colors = Theme.of(context).colorScheme;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(text)));
+      ..showSnackBar(
+        SnackBar(
+          backgroundColor: colors.error,
+          content: Text(message, style: TextStyle(color: colors.onError)),
+        ),
+      );
   }
->>>>>>> 90b522e (Conexion con Backend)
 
   Future<void> _register() async {
     if (_isLoading) return;
@@ -107,38 +79,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     setState(() => _isLoading = true);
     try {
+      // El backend regresa el token al registrarse, así que el usuario
+      // queda con la sesión iniciada y entra directo al Home.
       await AuthService.instance.register(
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
       if (!mounted) return;
-<<<<<<< HEAD
       Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
     } on ApiException catch (e) {
       if (!mounted) return;
-      final colors = Theme.of(context).colorScheme;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            backgroundColor: colors.error,
-            content: Text(e.message, style: TextStyle(color: colors.onError)),
-          ),
-        );
-=======
-      _snack('Cuenta creada. Ya puedes iniciar sesión');
-      Navigator.of(context).pop();
-    } on AuthException catch (e) {
-      if (!mounted) return;
-      _snack(e.message);
->>>>>>> 90b522e (Conexion con Backend)
+      _showError(e.message);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-<<<<<<< HEAD
   // ───────────── UI ─────────────
 
   @override
@@ -150,11 +107,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          tooltip: 'Regresar',
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
+        elevation: 0,
       ),
       body: SafeArea(
         top: false,
@@ -291,108 +244,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             );
           },
-=======
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Crear cuenta')),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    TextFormField(
-                      controller: _nameController,
-                      enabled: !_isLoading,
-                      textInputAction: TextInputAction.next,
-                      textCapitalization: TextCapitalization.words,
-                      validator: _validateName,
-                      decoration: const InputDecoration(
-                        hintText: 'Nombre',
-                        prefixIcon: Icon(Icons.person_outline_rounded),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    TextFormField(
-                      controller: _emailController,
-                      enabled: !_isLoading,
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
-                      autocorrect: false,
-                      validator: _validateEmail,
-                      decoration: const InputDecoration(
-                        hintText: 'Correo electrónico',
-                        prefixIcon: Icon(Icons.mail_outline_rounded),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    TextFormField(
-                      controller: _passwordController,
-                      enabled: !_isLoading,
-                      obscureText: _obscure,
-                      textInputAction: TextInputAction.next,
-                      validator: _validatePassword,
-                      decoration: InputDecoration(
-                        hintText: 'Contraseña',
-                        prefixIcon: const Icon(Icons.lock_outline_rounded),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscure
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
-                          ),
-                          onPressed: () => setState(() => _obscure = !_obscure),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    TextFormField(
-                      controller: _confirmController,
-                      enabled: !_isLoading,
-                      obscureText: _obscure,
-                      textInputAction: TextInputAction.done,
-                      validator: _validateConfirm,
-                      onFieldSubmitted: (_) => _register(),
-                      decoration: const InputDecoration(
-                        hintText: 'Confirmar contraseña',
-                        prefixIcon: Icon(Icons.lock_outline_rounded),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton(
-                      onPressed: _isLoading ? null : _register,
-                      child: _isLoading
-                          ? SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                color: colors.onPrimary,
-                              ),
-                            )
-                          : const Text('Registrarme'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
->>>>>>> 90b522e (Conexion con Backend)
         ),
       ),
     );
   }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 90b522e (Conexion con Backend)

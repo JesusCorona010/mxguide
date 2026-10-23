@@ -1,9 +1,5 @@
-<<<<<<< HEAD
 import 'dart:math' as math;
-=======
 import 'dart:ui' as ui;
-
->>>>>>> 90b522e (Conexion con Backend)
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -24,16 +20,11 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-<<<<<<< HEAD
   // Vista de todo México mientras no tengamos la ubicación del usuario.
-  static final _defaultCenter = LatLng(23.6345, -102.5528);
+  static const _defaultCenter = LatLng(23.6345, -102.5528);
   static const _defaultZoom = 5.0;
+  // Zoom al acercarse a un lugar o a la ubicación del usuario.
   static const _closeZoom = 14.0;
-=======
-  // Centro de Puebla mientras no tengamos la ubicación del usuario.
-  static const _defaultCenter = LatLng(19.0433, -98.1981);
-  static const _defaultZoom = 15.0;
->>>>>>> 90b522e (Conexion con Backend)
 
   GoogleMapController? _mapController;
   final _searchController = TextEditingController();
@@ -232,15 +223,17 @@ class _MapScreenState extends State<MapScreen> {
 
   void _selectPoint(MapPoint point, {bool moveMap = true}) {
     setState(() => _selected = point);
-    if (moveMap) {
-<<<<<<< HEAD
-      _mapController.move(point.location, math.max(_mapController.camera.zoom, _closeZoom));
-=======
-      _mapController?.animateCamera(
-        CameraUpdate.newLatLng(LatLng(point.latitude, point.longitude)),
-      );
->>>>>>> 90b522e (Conexion con Backend)
-    }
+    if (moveMap) _moveCameraTo(LatLng(point.latitude, point.longitude));
+  }
+
+  /// Centra el mapa en [target] sin alejarlo si el usuario ya estaba más cerca.
+  Future<void> _moveCameraTo(LatLng target) async {
+    final controller = _mapController;
+    if (controller == null) return;
+    final zoom = await controller.getZoomLevel();
+    await controller.animateCamera(
+      CameraUpdate.newLatLngZoom(target, math.max(zoom, _closeZoom)),
+    );
   }
 
   void _toggleType(MapPointType type) {
@@ -288,11 +281,7 @@ class _MapScreenState extends State<MapScreen> {
 
       final location = LatLng(position.latitude, position.longitude);
       setState(() => _userLocation = location);
-<<<<<<< HEAD
-      _mapController.move(location, _closeZoom);
-=======
-      _mapController?.animateCamera(CameraUpdate.newLatLngZoom(location, _defaultZoom));
->>>>>>> 90b522e (Conexion con Backend)
+      await _mapController?.animateCamera(CameraUpdate.newLatLngZoom(location, _closeZoom));
     } catch (_) {
       if (mounted) _showMessage('No pudimos obtener tu ubicación');
     } finally {
@@ -787,7 +776,6 @@ class _NearbyListSheet extends StatelessWidget {
   }
 }
 
-<<<<<<< HEAD
 /// Pastilla pequeña de "Cargando lugares..." sobre el mapa.
 class _LoadingPill extends StatelessWidget {
   const _LoadingPill();
@@ -815,7 +803,6 @@ class _LoadingPill extends StatelessWidget {
     );
   }
 }
-=======
 /// Estilo oscuro de Google Maps (se aplica cuando la app está en modo oscuro).
 const _darkMapStyle = '''
 [
@@ -842,4 +829,3 @@ const _darkMapStyle = '''
   {"featureType":"water","elementType":"labels.text.fill","stylers":[{"color":"#3d3d3d"}]}
 ]
 ''';
->>>>>>> 90b522e (Conexion con Backend)
