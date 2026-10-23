@@ -7,7 +7,7 @@
     <!-- Para conectarse al backend por HTTP. -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="mx_guide"
+        android:label="MXGuide"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
@@ -36,6 +36,10 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- API key de Google Maps (Maps SDK for Android). Reemplaza TU_API_KEY. -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyCpmtT8nU5TE05k6t6bf_KMoDP_7a4vm50"/>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

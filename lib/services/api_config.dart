@@ -7,25 +7,32 @@ import 'package:flutter/foundation.dart';
 /// peguen siempre a la misma URL base, en vez de tener la misma lógica
 /// copiada en dos archivos.
 ///
-/// TODO(backend): si tu compañero despliega la API en otro lado (no en tu
-/// máquina), cambia [port] o [baseUrl] por esa URL (por ejemplo, la de
-/// Render/Railway).
 class ApiConfig {
   ApiConfig._();
 
-  /// Puerto donde corre el backend en local. Ajusta el puerto si tu
-  /// compañero lo levantó en otro.
+  /// URL del backend desplegado en Render (SIN "/" al final y SIN "/api":
+  /// el backend expone las rutas directo, ej. /places, /auth/register).
+  /// Se puede sobreescribir al compilar: --dart-define=API_URL=https://...
+  static const String _prodUrl = String.fromEnvironment(
+    'API_URL',
+    defaultValue: 'https://mxguide-backend.onrender.com',
+  );
+
+  /// Para desarrollar contra tu backend local:
+  /// flutter run --dart-define=USE_LOCAL=true
+  static const bool _useLocal = bool.fromEnvironment('USE_LOCAL', defaultValue: false);
+
+  /// Puerto del backend local (solo se usa con USE_LOCAL=true).
   static const port = 3000;
 
-  /// Elige el host correcto según dónde corre la app:
-  /// - Web/desktop: el backend corre en la misma máquina → localhost.
-  /// - Emulador de Android: "localhost" del emulador NO es tu PC, así que
-  ///   Android reserva 10.0.2.2 para apuntar a la máquina host.
-  /// - Dispositivo físico (celular real): ni localhost ni 10.0.2.2 sirven,
-  ///   hace falta la IP de tu compañero en la red local (ej. 192.168.x.x).
   static String get baseUrl {
+    if (!_useLocal) return _prodUrl;
     if (kIsWeb) return 'http://localhost:$port';
     if (defaultTargetPlatform == TargetPlatform.android) return 'http://10.0.2.2:$port';
     return 'http://localhost:$port';
   }
+
+  /// Render (plan gratis) duerme el servidor y la primera petición puede
+  /// tardar ~50 s, por eso el timeout es largo.
+  static const Duration timeout = Duration(seconds: 60);
 }

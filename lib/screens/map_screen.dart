@@ -1,8 +1,12 @@
+<<<<<<< HEAD
 import 'dart:math' as math;
+=======
+import 'dart:ui' as ui;
+
+>>>>>>> 90b522e (Conexion con Backend)
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/map_point.dart';
 import '../services/api_client.dart';
@@ -11,7 +15,7 @@ import '../theme/app_colors.dart';
 import '../theme/theme_controller.dart';
 import '../utils/text_utils.dart';
 
-/// Pestaña "Mapa": lugares, hoteles y restaurantes con OpenStreetMap.
+/// Pestaña "Mapa": lugares, hoteles y restaurantes con Google Maps.
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
 
@@ -20,16 +24,18 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
+<<<<<<< HEAD
   // Vista de todo México mientras no tengamos la ubicación del usuario.
   static final _defaultCenter = LatLng(23.6345, -102.5528);
   static const _defaultZoom = 5.0;
   static const _closeZoom = 14.0;
+=======
+  // Centro de Puebla mientras no tengamos la ubicación del usuario.
+  static const _defaultCenter = LatLng(19.0433, -98.1981);
+  static const _defaultZoom = 15.0;
+>>>>>>> 90b522e (Conexion con Backend)
 
-  // Mapas gratuitos de CARTO (basados en OpenStreetMap), claro y oscuro.
-  static const _lightTiles = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png';
-  static const _darkTiles = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
-
-  final _mapController = MapController();
+  GoogleMapController? _mapController;
   final _searchController = TextEditingController();
 
   // Por ahora la API solo tiene lugares turísticos.
@@ -42,6 +48,10 @@ class _MapScreenState extends State<MapScreen> {
   MapPoint? _selected;
   LatLng? _userLocation;
   bool _isLocating = false;
+
+  // Íconos de los marcadores (se dibujan con los colores del tema actual).
+  Map<String, BitmapDescriptor> _markerIcons = {};
+  Brightness? _iconsBrightness;
 
   @override
   void initState() {
@@ -84,10 +94,99 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final theme = Theme.of(context);
+    if (_iconsBrightness != theme.brightness) {
+      _iconsBrightness = theme.brightness;
+      _buildMarkerIcons(theme.colorScheme);
+    }
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
-    _mapController.dispose();
+    _mapController?.dispose();
     super.dispose();
+  }
+
+  // ───────────── Marcadores ─────────────
+
+  Future<void> _buildMarkerIcons(ColorScheme colors) async {
+    final icons = <String, BitmapDescriptor>{};
+    for (final type in MapPointType.values) {
+      for (final selected in [false, true]) {
+        icons['${type.name}_$selected'] = await _renderMarker(
+          icon: type.icon,
+          background: type.color(colors),
+          iconColor: type.onColor(colors),
+          selected: selected,
+        );
+      }
+    }
+    if (mounted) setState(() => _markerIcons = icons);
+  }
+
+  /// Dibuja el marcador (círculo de color con el ícono del tipo) como imagen.
+  Future<BitmapDescriptor> _renderMarker({
+    required IconData icon,
+    required Color background,
+    required Color iconColor,
+    required bool selected,
+  }) async {
+    const ratio = 3.0;
+    final logical = selected ? 52.0 : 40.0;
+    final px = logical * ratio;
+    final center = Offset(px / 2, px / 2);
+    final radius = (selected ? 22.0 : 17.0) * ratio;
+
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+
+    if (selected) {
+      canvas.drawCircle(center, px / 2, Paint()..color = background.withAlpha(90));
+    }
+    canvas.drawCircle(center, radius, Paint()..color = background);
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2 * ratio
+        ..color = Colors.white,
+    );
+
+    final painter = TextPainter(
+      textDirection: TextDirection.ltr,
+      text: TextSpan(
+        text: String.fromCharCode(icon.codePoint),
+        style: TextStyle(
+          fontSize: (selected ? 24.0 : 18.0) * ratio,
+          fontFamily: icon.fontFamily,
+          package: icon.fontPackage,
+          color: iconColor,
+        ),
+      ),
+    )..layout();
+    painter.paint(canvas, center - Offset(painter.width / 2, painter.height / 2));
+
+    final image = await recorder.endRecording().toImage(px.round(), px.round());
+    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+    return BitmapDescriptor.bytes(bytes!.buffer.asUint8List(), imagePixelRatio: ratio);
+  }
+
+  Set<Marker> _buildMarkers(List<MapPoint> points) {
+    if (_markerIcons.isEmpty) return {};
+    return {
+      for (final point in points)
+        Marker(
+          markerId: MarkerId(point.id),
+          position: LatLng(point.latitude, point.longitude),
+          anchor: const Offset(0.5, 0.5),
+          icon: _markerIcons['${point.type.name}_${point.id == _selected?.id}']!,
+          onTap: () => _selectPoint(point, moveMap: false),
+        ),
+    };
   }
 
   // ───────────── Datos ─────────────
@@ -134,7 +233,13 @@ class _MapScreenState extends State<MapScreen> {
   void _selectPoint(MapPoint point, {bool moveMap = true}) {
     setState(() => _selected = point);
     if (moveMap) {
+<<<<<<< HEAD
       _mapController.move(point.location, math.max(_mapController.camera.zoom, _closeZoom));
+=======
+      _mapController?.animateCamera(
+        CameraUpdate.newLatLng(LatLng(point.latitude, point.longitude)),
+      );
+>>>>>>> 90b522e (Conexion con Backend)
     }
   }
 
@@ -183,7 +288,11 @@ class _MapScreenState extends State<MapScreen> {
 
       final location = LatLng(position.latitude, position.longitude);
       setState(() => _userLocation = location);
+<<<<<<< HEAD
       _mapController.move(location, _closeZoom);
+=======
+      _mapController?.animateCamera(CameraUpdate.newLatLngZoom(location, _defaultZoom));
+>>>>>>> 90b522e (Conexion con Backend)
     } catch (_) {
       if (mounted) _showMessage('No pudimos obtener tu ubicación');
     } finally {
@@ -240,52 +349,20 @@ class _MapScreenState extends State<MapScreen> {
         Expanded(
           child: Stack(
             children: [
-              FlutterMap(
-                mapController: _mapController,
-                options: MapOptions(
-                  initialCenter: _defaultCenter,
-                  initialZoom: _defaultZoom,
-                  minZoom: 4,
-                  maxZoom: 18,
-                  onTap: (_, __) => FocusScope.of(context).unfocus(),
+              GoogleMap(
+                initialCameraPosition: const CameraPosition(
+                  target: _defaultCenter,
+                  zoom: _defaultZoom,
                 ),
-                children: [
-                  TileLayer(
-                    key: ValueKey(isDark), // Recarga el mapa al cambiar de tema.
-                    urlTemplate: isDark ? _darkTiles : _lightTiles,
-                    subdomains: const ['a', 'b', 'c', 'd'],
-                    userAgentPackageName: 'com.mxguide.app',
-                  ),
-                  MarkerLayer(
-                    markers: [
-                      for (final point in points)
-                        Marker(
-                          point: point.location,
-                          width: point.id == _selected?.id ? 48 : 38,
-                          height: point.id == _selected?.id ? 48 : 38,
-                          child: _PointMarker(
-                            point: point,
-                            selected: point.id == _selected?.id,
-                            onTap: () => _selectPoint(point, moveMap: false),
-                          ),
-                        ),
-                      if (user != null)
-                        Marker(
-                          point: user,
-                          width: 40,
-                          height: 40,
-                          child: const _UserLocationMarker(),
-                        ),
-                    ],
-                  ),
-                  const RichAttributionWidget(
-                    alignment: AttributionAlignment.bottomLeft,
-                    attributions: [
-                      TextSourceAttribution('OpenStreetMap contributors'),
-                      TextSourceAttribution('CARTO'),
-                    ],
-                  ),
-                ],
+                onMapCreated: (controller) => _mapController = controller,
+                style: isDark ? _darkMapStyle : null,
+                markers: _buildMarkers(points),
+                minMaxZoomPreference: const MinMaxZoomPreference(4, 19),
+                myLocationEnabled: user != null,
+                myLocationButtonEnabled: false,
+                zoomControlsEnabled: false,
+                mapToolbarEnabled: false,
+                onTap: (_) => FocusScope.of(context).unfocus(),
               ),
               Positioned(
                 top: 0,
@@ -449,70 +526,6 @@ class _LayerChips extends StatelessWidget {
             shadowColor: Colors.black26,
           );
         },
-      ),
-    );
-  }
-}
-
-class _PointMarker extends StatelessWidget {
-  const _PointMarker({required this.point, required this.selected, required this.onTap});
-
-  final MapPoint point;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final background = point.type.color(colors);
-
-    return Semantics(
-      button: true,
-      label: point.name,
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          decoration: BoxDecoration(
-            color: background,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2),
-            boxShadow: [
-              BoxShadow(
-                color: selected ? background.withAlpha(110) : Colors.black26,
-                blurRadius: selected ? 12 : 4,
-                spreadRadius: selected ? 3 : 0,
-              ),
-            ],
-          ),
-          child: Icon(
-            point.type.icon,
-            size: selected ? 24 : 18,
-            color: point.type.onColor(colors),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _UserLocationMarker extends StatelessWidget {
-  const _UserLocationMarker();
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Container(
-      decoration: BoxDecoration(color: colors.primary.withAlpha(50), shape: BoxShape.circle),
-      alignment: Alignment.center,
-      child: Container(
-        width: 18,
-        height: 18,
-        decoration: BoxDecoration(
-          color: colors.primary,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 3),
-        ),
       ),
     );
   }
@@ -774,6 +787,7 @@ class _NearbyListSheet extends StatelessWidget {
   }
 }
 
+<<<<<<< HEAD
 /// Pastilla pequeña de "Cargando lugares..." sobre el mapa.
 class _LoadingPill extends StatelessWidget {
   const _LoadingPill();
@@ -801,3 +815,31 @@ class _LoadingPill extends StatelessWidget {
     );
   }
 }
+=======
+/// Estilo oscuro de Google Maps (se aplica cuando la app está en modo oscuro).
+const _darkMapStyle = '''
+[
+  {"elementType":"geometry","stylers":[{"color":"#212121"}]},
+  {"elementType":"labels.icon","stylers":[{"visibility":"off"}]},
+  {"elementType":"labels.text.fill","stylers":[{"color":"#757575"}]},
+  {"elementType":"labels.text.stroke","stylers":[{"color":"#212121"}]},
+  {"featureType":"administrative","elementType":"geometry","stylers":[{"color":"#757575"}]},
+  {"featureType":"administrative.country","elementType":"labels.text.fill","stylers":[{"color":"#9e9e9e"}]},
+  {"featureType":"administrative.land_parcel","stylers":[{"visibility":"off"}]},
+  {"featureType":"administrative.locality","elementType":"labels.text.fill","stylers":[{"color":"#bdbdbd"}]},
+  {"featureType":"poi","elementType":"labels.text.fill","stylers":[{"color":"#757575"}]},
+  {"featureType":"poi.park","elementType":"geometry","stylers":[{"color":"#181818"}]},
+  {"featureType":"poi.park","elementType":"labels.text.fill","stylers":[{"color":"#616161"}]},
+  {"featureType":"poi.park","elementType":"labels.text.stroke","stylers":[{"color":"#1b1b1b"}]},
+  {"featureType":"road","elementType":"geometry.fill","stylers":[{"color":"#2c2c2c"}]},
+  {"featureType":"road","elementType":"labels.text.fill","stylers":[{"color":"#8a8a8a"}]},
+  {"featureType":"road.arterial","elementType":"geometry","stylers":[{"color":"#373737"}]},
+  {"featureType":"road.highway","elementType":"geometry","stylers":[{"color":"#3c3c3c"}]},
+  {"featureType":"road.highway.controlled_access","elementType":"geometry","stylers":[{"color":"#4e4e4e"}]},
+  {"featureType":"road.local","elementType":"labels.text.fill","stylers":[{"color":"#616161"}]},
+  {"featureType":"transit","elementType":"labels.text.fill","stylers":[{"color":"#757575"}]},
+  {"featureType":"water","elementType":"geometry","stylers":[{"color":"#000000"}]},
+  {"featureType":"water","elementType":"labels.text.fill","stylers":[{"color":"#3d3d3d"}]}
+]
+''';
+>>>>>>> 90b522e (Conexion con Backend)
