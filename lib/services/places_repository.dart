@@ -38,7 +38,7 @@ class PlacesRepository {
 
   Future<CatalogData> _fetchCatalog() async {
     final results = await Future.wait([
-      _api.get('/places', query: {'limit': '200'}),
+      _api.get('/places', query: {'limit': '2000'}),
       _api.get('/categories'),
       _api.get('/states'),
     ]);

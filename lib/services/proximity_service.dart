@@ -151,7 +151,6 @@ class ProximityService {
     for (final place in _places) {
       final lat = place.latitude;
       final lng = place.longitude;
-      if (lat == null || lng == null) continue;
 
       final distance = Geolocator.distanceBetween(position.latitude, position.longitude, lat, lng);
       if (distance > radiusMeters) continue;
