@@ -21,7 +21,7 @@ class PlaceService {
     if (_cache != null && !forceRefresh) return _cache!;
 
     final uri = Uri.parse('${ApiConfig.baseUrl}/places');
-    final response = await http.get(uri).timeout(const Duration(seconds: 10));
+    final response = await http.get(uri).timeout(ApiConfig.timeout);
 
     if (response.statusCode != 200) {
       throw Exception('El servidor respondió ${response.statusCode} al pedir /places');
