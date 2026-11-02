@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../models/achievement.dart';
 
-/// Medalla circular. Si está bloqueada se ve gris con candado.
+/// Insignia circular de un estado.
+///
+/// Desbloqueada: la ilustración a color con una estrella.
+/// Bloqueada: la misma ilustración en gris, apagada y con candado, para que
+/// el usuario vea qué le falta por descubrir.
 class AchievementMedal extends StatelessWidget {
   const AchievementMedal({
     super.key,
@@ -15,10 +19,13 @@ class AchievementMedal extends StatelessWidget {
   final bool unlocked;
   final double size;
 
-  static const _lockedBgLight = Color(0xFFE4E8E6);
-  static const _lockedBgDark = Color(0xFF262B2B);
-  static const _lockedIconLight = Color(0xFF9AA8AF);
-  static const _lockedIconDark = Color(0xFF5F6B70);
+  /// Matriz para pasar la imagen a escala de grises.
+  static const _grayscale = ColorFilter.matrix(<double>[
+    0.2126, 0.7152, 0.0722, 0, 0,
+    0.2126, 0.7152, 0.0722, 0, 0,
+    0.2126, 0.7152, 0.0722, 0, 0,
+    0,      0,      0,      1, 0,
+  ]);
 
   @override
   Widget build(BuildContext context) {
@@ -26,15 +33,37 @@ class AchievementMedal extends StatelessWidget {
     final colors = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     final accent = achievement.accent.color(colors);
-
-    final background = unlocked ? accent : (isDark ? _lockedBgDark : _lockedBgLight);
-    final iconColor = unlocked ? Colors.white : (isDark ? _lockedIconDark : _lockedIconLight);
     final badgeSize = size * 0.34;
+
+    // Se decodifica al tamaño real en pantalla para no gastar memoria.
+    final cacheSize = (size * MediaQuery.devicePixelRatioOf(context)).round();
+
+    Widget image = Image.asset(
+      achievement.badgeAsset,
+      width: size,
+      height: size,
+      cacheWidth: cacheSize,
+      fit: BoxFit.cover,
+      // Si falta la imagen, se usa el ícono de antes para no romper la pantalla.
+      errorBuilder: (context, error, stackTrace) => _FallbackMedal(
+        icon: achievement.icon,
+        color: accent,
+        size: size,
+      ),
+    );
+
+    if (!unlocked) {
+      image = Opacity(
+        opacity: isDark ? 0.35 : 0.45,
+        child: ColorFiltered(colorFilter: _grayscale, child: image),
+      );
+    }
 
     return Semantics(
       label: unlocked
-          ? 'Medalla ${achievement.title}, desbloqueada'
-          : 'Medalla ${achievement.title}, bloqueada',
+          ? 'Insignia ${achievement.title}, desbloqueada'
+          : 'Insignia ${achievement.title}, bloqueada',
+      image: true,
       child: SizedBox(
         width: size + 6,
         height: size + 6,
@@ -42,26 +71,32 @@ class AchievementMedal extends StatelessWidget {
           clipBehavior: Clip.none,
           alignment: Alignment.center,
           children: [
-            Container(
-              width: size,
-              height: size,
+            DecoratedBox(
               decoration: BoxDecoration(
-                color: background,
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: unlocked ? colors.tertiary : colors.outline,
-                  width: size * 0.05,
-                ),
                 boxShadow: unlocked
-                    ? [BoxShadow(color: accent.withAlpha(90), blurRadius: size * 0.18, offset: Offset(0, size * 0.06))]
+                    ? [
+                        BoxShadow(
+                          color: accent.withAlpha(90),
+                          blurRadius: size * 0.18,
+                          offset: Offset(0, size * 0.06),
+                        ),
+                      ]
                     : null,
               ),
-              child: Icon(
-                unlocked ? achievement.icon : Icons.lock_rounded,
-                size: size * 0.46,
-                color: iconColor,
-              ),
+              child: ClipOval(child: SizedBox(width: size, height: size, child: image)),
             ),
+            if (!unlocked)
+              Container(
+                width: size * 0.42,
+                height: size * 0.42,
+                decoration: BoxDecoration(
+                  color: colors.surface.withAlpha(230),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: colors.outline),
+                ),
+                child: Icon(Icons.lock_rounded, size: size * 0.22, color: colors.onSurfaceVariant),
+              ),
             if (unlocked)
               Positioned(
                 right: 0,
@@ -80,6 +115,22 @@ class AchievementMedal extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _FallbackMedal extends StatelessWidget {
+  const _FallbackMedal({required this.icon, required this.color, required this.size});
+
+  final IconData icon;
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: color,
+      child: Center(child: Icon(icon, size: size * 0.46, color: Colors.white)),
     );
   }
 }

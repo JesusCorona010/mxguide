@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'explore_screen.dart';
 import 'map_screen.dart';
 import 'achievements_screen.dart';
+import 'profile/profile_screen.dart';
+import '../services/nearby_alerts_service.dart';
 
 /// Pantalla principal con la barra de navegación inferior y el botón "+".
 class HomeScreen extends StatefulWidget {
@@ -15,14 +17,23 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
+  static const _achievementsTab = 2;
+
   // IndexedStack mantiene el estado de cada pestaña (búsqueda, scroll, filtros)
   // aunque cambies de una a otra.
-  static const _tabs = <Widget>[
-    ExploreScreen(),
-    MapScreen(),
-    AchievementsScreen(),
-    _ComingSoonTab(icon: Icons.person_outline_rounded, title: 'Perfil'),
+  late final List<Widget> _tabs = [
+    const ExploreScreen(),
+    const MapScreen(),
+    const AchievementsScreen(),
+    ProfileScreen(onOpenAchievements: () => setState(() => _currentIndex = _achievementsTab)),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Si el usuario dejó prendidos los avisos de lugares cercanos, arrancan.
+    NearbyAlertsService.instance.restore();
+  }
 
   void _onAddPressed() {
     // TODO: definir qué hace el botón "+" (agregar lugar, reseña, etc.).
@@ -140,38 +151,6 @@ class _NavItem extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Pestaña temporal para las secciones que aún no se diseñan.
-class _ComingSoonTab extends StatelessWidget {
-  const _ComingSoonTab({required this.icon, required this.title});
-
-  final IconData icon;
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-
-    return SafeArea(
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 56, color: colors.primary),
-            const SizedBox(height: 12),
-            Text(title, style: theme.textTheme.titleLarge),
-            const SizedBox(height: 4),
-            Text(
-              'Próximamente',
-              style: theme.textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
-            ),
-          ],
         ),
       ),
     );

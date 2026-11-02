@@ -4,12 +4,16 @@ class AppUser {
     required this.email,
     required this.name,
     required this.role,
+    this.createdAt,
   });
 
   final String id;
   final String email;
   final String name;
   final String role;
+
+  /// Fecha en que se creó la cuenta (la manda GET /auth/me).
+  final DateTime? createdAt;
 
   bool get isAdmin => role == 'admin';
 
@@ -27,5 +31,6 @@ class AppUser {
         email: json['email'] as String? ?? '',
         name: json['name'] as String? ?? '',
         role: json['role'] as String? ?? 'user',
+        createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '')?.toLocal(),
       );
 }

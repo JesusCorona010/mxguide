@@ -26,7 +26,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
   final _auth = AuthService.instance;
 
   CatalogData? _catalog;
-  bool _isLoading = true;
   bool _isServerSlow = false;
   String? _error;
 
@@ -53,7 +52,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   Future<void> _load({bool refresh = false}) async {
     setState(() {
-      _isLoading = true;
       _error = null;
       _isServerSlow = false;
     });
@@ -77,7 +75,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
       }
     } finally {
       slowTimer.cancel();
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../utils/text_utils.dart';
+
 /// Color de acento de la medalla (se toma del tema para respetar claro/oscuro).
 enum MedalAccent { teal, red, ochre }
 
@@ -34,6 +36,10 @@ class StateAchievement {
     required this.icon,
     required this.accent,
   });
+
+  /// Imagen de la insignia en assets/badges, por ejemplo
+  /// "Ciudad de México" → assets/badges/ciudad_de_mexico.webp.
+  String get badgeAsset => 'assets/badges/${normalizeText(state).replaceAll(' ', '_')}.webp';
 }
 
 /// Rango del usuario según cuántos estados ha visitado.

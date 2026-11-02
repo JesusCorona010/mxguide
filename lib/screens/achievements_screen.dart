@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../data/achievements_data.dart';
 import '../models/achievement.dart';
+import '../services/progress_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/achievement_medal.dart';
 import 'achievement_unlocked_screen.dart';
@@ -16,20 +17,27 @@ class AchievementsScreen extends StatefulWidget {
 }
 
 class _AchievementsScreenState extends State<AchievementsScreen> {
-  // TODO(backend): obtener de la API los estados visitados y los contadores.
-  final Set<String> _visitedStates = {
-    'Ciudad de México',
-    'Puebla',
-    'Estado de México',
-    'Oaxaca',
-    'Yucatán',
-  };
-  final int _visitedPlaces = 23;
-  final int _reviews = 4;
+  final _progress = ProgressService.instance;
 
   _MedalFilter _filter = _MedalFilter.all;
 
-  bool _isUnlocked(StateAchievement a) => _visitedStates.contains(a.state);
+  @override
+  void initState() {
+    super.initState();
+    _progress.addListener(_onProgressChanged);
+  }
+
+  @override
+  void dispose() {
+    _progress.removeListener(_onProgressChanged);
+    super.dispose();
+  }
+
+  void _onProgressChanged() {
+    if (mounted) setState(() {});
+  }
+
+  bool _isUnlocked(StateAchievement a) => _progress.hasVisited(a.state);
 
   List<StateAchievement> get _filteredAchievements {
     final list = stateAchievements.where((a) {
@@ -52,11 +60,12 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
   /// TODO(backend): esto debe dispararse cuando el usuario marque como
   /// visitado un lugar de un estado nuevo.
   Future<void> _unlock(StateAchievement achievement) async {
-    setState(() => _visitedStates.add(achievement.state));
+    await _progress.registerVisit(achievement.state);
+    if (!mounted) return;
     await Navigator.of(context).push(
       AchievementUnlockedScreen.route(
         achievement: achievement,
-        visitedStates: _visitedStates.length,
+        visitedStates: _progress.visitedStates.length,
         totalStates: stateAchievements.length,
       ),
     );
@@ -100,15 +109,15 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                     style: theme.textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
                   ),
                   const SizedBox(height: 16),
-                  _RankCard(visitedStates: _visitedStates.length, totalStates: stateAchievements.length),
+                  _RankCard(visitedStates: _progress.visitedStates.length, totalStates: stateAchievements.length),
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      _StatTile(icon: Icons.place_rounded, value: _visitedStates.length, label: 'Estados'),
+                      _StatTile(icon: Icons.place_rounded, value: _progress.visitedStates.length, label: 'Estados'),
                       const SizedBox(width: 8),
-                      _StatTile(icon: Icons.check_circle_rounded, value: _visitedPlaces, label: 'Lugares'),
+                      _StatTile(icon: Icons.check_circle_rounded, value: _progress.visitedPlaces, label: 'Lugares'),
                       const SizedBox(width: 8),
-                      _StatTile(icon: Icons.rate_review_rounded, value: _reviews, label: 'Reseñas'),
+                      _StatTile(icon: Icons.rate_review_rounded, value: _progress.reviews, label: 'Reseñas'),
                     ],
                   ),
                   const SizedBox(height: 16),
