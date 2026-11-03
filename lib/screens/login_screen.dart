@@ -72,8 +72,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _loginWithGoogle() async {
     if (_isBusy) return;
-    // TODO(backend): la API todavía no tiene una ruta para iniciar con Google.
-    _showComingSoon('El inicio de sesión con Google');
+    setState(() => _isGoogleLoading = true);
+    try {
+      final ok = await AuthService.instance.loginWithGoogle();
+      if (!mounted) return;
+      if (ok) _goToHome();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      _showError(e.message);
+    } finally {
+      if (mounted) setState(() => _isGoogleLoading = false);
+    }
   }
 
   void _goToRegister() => Navigator.of(context).pushNamed('/register');
@@ -225,27 +234,32 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildGoogleButton() {
-    return OutlinedButton(
-      onPressed: _loginWithGoogle,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (_isGoogleLoading)
-            const SizedBox(
-              width: 22,
-              height: 22,
-              child: CircularProgressIndicator(strokeWidth: 2.5),
-            )
-          else
-            Image.asset(
-              'assets/images/google_logo.png',
-              width: 22,
-              height: 22,
-              // Si aún no agregas el logo de Google, muestra un ícono temporal.
-              errorBuilder: (_, __, ___) => const Icon(Icons.g_mobiledata_rounded, size: 28),
+  return OutlinedButton(
+    onPressed: _loginWithGoogle,
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (_isGoogleLoading)
+          const SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2.5),
+          )
+        else
+          Image.asset(
+            'assets/images/google_logo.png',
+            width: 22,
+            height: 22,
+            errorBuilder: (_, __, ___) => const Icon(Icons.g_mobiledata_rounded, size: 28),
+          ),
+        const SizedBox(width: 12),
+        const Flexible(
+          child: Text(
+            'Continuar con Google',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             ),
-          const SizedBox(width: 12),
-          const Text('Continuar con Google'),
+          ),
         ],
       ),
     );
