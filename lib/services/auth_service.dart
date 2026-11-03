@@ -66,7 +66,7 @@ class AuthService extends ChangeNotifier {
     }
 
     if (!_googleReady) {
-      debugPrint('serverClientId usado: $_googleWebClientId');
+      // debugPrint('serverClientId usado: $_googleWebClientId');
       await google.initialize(serverClientId: _googleWebClientId);
       _googleReady = true;
     }
