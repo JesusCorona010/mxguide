@@ -4,6 +4,7 @@ import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'services/auth_service.dart';
+import 'services/chatbot_service.dart';
 import 'services/progress_service.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_controller.dart';
@@ -19,7 +20,11 @@ Future<void> main() async {
   await AuthService.instance.restoreSession();
 
   // Preferencias guardadas en el celular: tema y progreso de insignias.
-  await Future.wait([themeController.load(), ProgressService.instance.load()]);
+  await Future.wait([
+    themeController.load(),
+    ProgressService.instance.load(),
+    ChatbotService.instance.loadPreferences(),
+  ]);
 
   runApp(const MxGuideApp());
 }

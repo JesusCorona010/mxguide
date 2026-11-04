@@ -1,11 +1,5 @@
 import 'dart:math';
 
-/// Frases para el aviso de "estás cerca de un lugar", separadas por
-/// categoría para que no se sienta siempre el mismo mensaje. Si la
-/// categoría del lugar no tiene frases propias, se usa [_defaultMessages].
-///
-/// TODO: si se agregan categorías nuevas a mockPlaces, agregar aquí sus
-/// propias frases (o se van a la genérica).
 const Map<String, List<String>> _messagesByCategory = {
   'Histórico': [
     'La historia te espera aquí. ¿Le echamos un vistazo?',
