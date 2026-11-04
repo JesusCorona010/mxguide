@@ -4,6 +4,7 @@ import '../../data/achievements_data.dart';
 import '../../models/achievement.dart';
 import '../../models/app_user.dart';
 import '../../services/auth_service.dart';
+import '../../services/chatbot_service.dart';
 import '../../services/nearby_alerts_service.dart';
 import '../../services/progress_service.dart';
 import '../../theme/app_colors.dart';
@@ -27,9 +28,10 @@ class ProfileScreen extends StatelessWidget {
     final auth = AuthService.instance;
     final progress = ProgressService.instance;
     final alerts = NearbyAlertsService.instance;
+    final chatbot = ChatbotService.instance;
 
     return ListenableBuilder(
-      listenable: Listenable.merge([auth, progress, alerts, themeController]),
+      listenable: Listenable.merge([auth, progress, alerts, themeController, chatbot]),
       builder: (context, _) {
         final isLoggedIn = auth.isLoggedIn;
         final user = auth.user;
@@ -123,6 +125,17 @@ class ProfileScreen extends StatelessWidget {
                     trailing: Switch(
                       value: alerts.enabled,
                       onChanged: (value) => _toggleAlerts(context, value),
+                    ),
+                  ),
+                  MenuTile(
+                    icon: Icons.auto_awesome_rounded,
+                    title: 'Burbuja de Balam',
+                    subtitle: 'Tu guía de viaje flotando en la app',
+                    showChevron: false,
+                    onTap: () => chatbot.setBubbleVisible(!chatbot.bubbleVisible),
+                    trailing: Switch(
+                      value: chatbot.bubbleVisible,
+                      onChanged: chatbot.setBubbleVisible,
                     ),
                   ),
                 ],

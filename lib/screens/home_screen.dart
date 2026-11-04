@@ -6,6 +6,7 @@ import 'achievements_screen.dart';
 import 'profile/profile_screen.dart';
 import 'add_screen.dart';
 import '../services/nearby_alerts_service.dart';
+import '../widgets/chat_bubble_overlay.dart';
 
 /// Pantalla principal con la barra de navegación inferior y el botón "+".
 class HomeScreen extends StatefulWidget {
@@ -61,17 +62,20 @@ class _HomeScreenState extends State<HomeScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
-        body: IndexedStack(
-          index: _currentIndex,
-          children: [
-            for (var i = 0; i < _tabs.length; i++)
-              if (!_opened.contains(i))
-                const SizedBox.shrink()
-              else if (i == _mapTab)
-                MapScreen(isActive: _currentIndex == _mapTab)
-              else
-                _tabs[i],
-          ],
+        // La burbuja de Balam flota encima de todas las pestañas.
+        body: ChatBubbleOverlay(
+          child: IndexedStack(
+            index: _currentIndex,
+            children: [
+              for (var i = 0; i < _tabs.length; i++)
+                if (!_opened.contains(i))
+                  const SizedBox.shrink()
+                else if (i == _mapTab)
+                  MapScreen(isActive: _currentIndex == _mapTab)
+                else
+                  _tabs[i],
+            ],
+          ),
         ),
         floatingActionButton: FloatingActionButton(
           tooltip: 'Agregar',

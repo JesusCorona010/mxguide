@@ -1,8 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import '../config/api_config.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 
@@ -72,39 +70,16 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  /// Google: la app pide el idToken con google_sign_in y el backend lo valida
-  /// en POST /auth/google, que regresa el mismo JWT del login normal.
   Future<void> _loginWithGoogle() async {
     if (_isBusy) return;
-    if (ApiConfig.googleServerClientId.isEmpty) {
-      _showError('Falta configurar el ID de cliente de Google (googleServerClientId).');
-      return;
-    }
-
     setState(() => _isGoogleLoading = true);
     try {
-      final google = GoogleSignIn(
-        scopes: const ['email', 'profile'],
-        serverClientId: ApiConfig.googleServerClientId,
-      );
-      // Así siempre deja elegir la cuenta, aunque ya se haya usado otra antes.
-      await google.signOut();
-      final account = await google.signIn();
-      if (account == null) return; // El usuario canceló.
-
-      final idToken = (await account.authentication).idToken;
-      if (idToken == null || idToken.isEmpty) {
-        throw const ApiException('Google no entregó el token de sesión. Intenta de nuevo.');
-      }
-
-      await AuthService.instance.loginWithGoogle(idToken);
+      final ok = await AuthService.instance.loginWithGoogle();
       if (!mounted) return;
-      _goToHome();
+      if (ok) _goToHome();
     } on ApiException catch (e) {
-      if (mounted) _showError(e.message);
-    } on PlatformException catch (e) {
-      // Ej. ApiException 10 = falta registrar el SHA-1 de la app en Google Cloud.
-      if (mounted) _showError('No pudimos iniciar con Google (${e.code}). Revisa la configuración.');
+      if (!mounted) return;
+      _showError(e.message);
     } finally {
       if (mounted) setState(() => _isGoogleLoading = false);
     }
@@ -259,27 +234,32 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildGoogleButton() {
-    return OutlinedButton(
-      onPressed: _loginWithGoogle,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (_isGoogleLoading)
-            const SizedBox(
-              width: 22,
-              height: 22,
-              child: CircularProgressIndicator(strokeWidth: 2.5),
-            )
-          else
-            Image.asset(
-              'assets/images/google_logo.png',
-              width: 22,
-              height: 22,
-              // Si aún no agregas el logo de Google, muestra un ícono temporal.
-              errorBuilder: (_, __, ___) => const Icon(Icons.g_mobiledata_rounded, size: 28),
+  return OutlinedButton(
+    onPressed: _loginWithGoogle,
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (_isGoogleLoading)
+          const SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2.5),
+          )
+        else
+          Image.asset(
+            'assets/images/google_logo.png',
+            width: 22,
+            height: 22,
+            errorBuilder: (_, __, ___) => const Icon(Icons.g_mobiledata_rounded, size: 28),
+          ),
+        const SizedBox(width: 12),
+        const Flexible(
+          child: Text(
+            'Continuar con Google',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             ),
-          const SizedBox(width: 12),
-          const Text('Continuar con Google'),
+          ),
         ],
       ),
     );

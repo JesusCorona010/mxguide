@@ -48,9 +48,8 @@ dependencies:
   google_maps_flutter: ^2.10.0
   latlong2: ^0.10.1
   url_launcher: ^6.3.3
-  # Inicio de sesión con Google (manda el idToken a POST /auth/google).
-  google_sign_in: ^6.3.0
   shared_preferences: ^2.5.6
+  google_sign_in: ^7.2.0
 
 dev_dependencies:
   flutter_test:

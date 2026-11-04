@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../utils/text_utils.dart';
 
 /// Color de acento de la medalla (se toma del tema para respetar claro/oscuro).

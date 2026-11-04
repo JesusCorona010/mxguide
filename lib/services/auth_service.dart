@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_user.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'api_client.dart';
 
 /// Maneja la sesión: login, registro, cerrar sesión y recordar el token.
@@ -50,10 +51,44 @@ class AuthService extends ChangeNotifier {
     await _startSession(data);
   }
 
-  /// Inicia sesión con el idToken que entrega Google (POST /auth/google).
-  Future<void> loginWithGoogle(String idToken) async {
+  // Client ID tipo "Web" de Google Cloud (el mismo que GOOGLE_CLIENT_ID en Render).
+  static const _googleWebClientId = '942836119956-qbu02c1mlhgr8kjgvphggunv7bgc6avl.apps.googleusercontent.com';
+  bool _googleReady = false;
+
+  /// Devuelve false si el usuario cancela. Lanza [ApiException] en otros errores.
+  Future<bool> loginWithGoogle() async {
+    final google = GoogleSignIn.instance;
+    if (!google.supportsAuthenticate()) {
+      throw const ApiException('El inicio con Google no está disponible en esta plataforma.');
+    }
+    if (_googleWebClientId.startsWith('PEGA_AQUI')) {
+      throw const ApiException('Falta configurar el Web Client ID de Google.');
+    }
+
+    if (!_googleReady) {
+      // debugPrint('serverClientId usado: $_googleWebClientId');
+      await google.initialize(serverClientId: _googleWebClientId);
+      _googleReady = true;
+    }
+
+    final GoogleSignInAccount account;
+    try {
+      account = await google.authenticate(scopeHint: const ['email', 'profile']);
+    } on GoogleSignInException catch (e) {
+      debugPrint('Google sign-in: code=${e.code} description=${e.description}');
+      throw ApiException(
+        'Google: ${e.code.name}${e.description != null ? ' - ${e.description}' : ''}',
+      );
+    }
+
+    final idToken = account.authentication.idToken;
+    if (idToken == null) {
+      throw const ApiException('Google no entregó el token de sesión.');
+    }
+
     final data = await _api.post('/auth/google', body: {'idToken': idToken});
     await _startSession(data);
+    return true;
   }
 
   /// Vuelve a pedir los datos del usuario. Si el token ya no sirve, cierra sesión.
@@ -78,6 +113,7 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
+
   Future<void> _startSession(dynamic data) async {
     final token = data is Map ? data['accessToken'] as String? : null;
     if (token == null) {
@@ -91,3 +127,4 @@ class AuthService extends ChangeNotifier {
     await refreshUser();
   }
 }
+
