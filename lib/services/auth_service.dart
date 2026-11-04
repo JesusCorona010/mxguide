@@ -52,7 +52,7 @@ class AuthService extends ChangeNotifier {
   }
 
   // Client ID tipo "Web" de Google Cloud (el mismo que GOOGLE_CLIENT_ID en Render).
-  static const _googleWebClientId = '1025542032352-ol86rav0fs5q7rt2qhdcv8vipv4ajcij.apps.googleusercontent.com';
+  static const _googleWebClientId = '942836119956-qbu02c1mlhgr8kjgvphggunv7bgc6avl.apps.googleusercontent.com';
   bool _googleReady = false;
 
   /// Devuelve false si el usuario cancela. Lanza [ApiException] en otros errores.
