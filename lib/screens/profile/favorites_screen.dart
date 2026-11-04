@@ -5,6 +5,7 @@ import '../../services/api_client.dart';
 import '../../services/auth_service.dart';
 import '../../services/places_repository.dart';
 import '../../widgets/place_card.dart';
+import '../place_detail_screen.dart';
 
 /// Perfil > Mis favoritos: los lugares que el usuario guardó (GET /favorites).
 class FavoritesScreen extends StatefulWidget {
@@ -87,11 +88,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     }
   }
 
-  void _openPlace(Place place) {
-    // TODO: navegar al detalle del lugar cuando exista la pantalla.
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text('Detalle de "${place.name}" próximamente')));
+  Future<void> _openPlace(Place place) async {
+    await Navigator.of(context).push(PlaceDetailScreen.route(place.id, name: place.name));
+    // Si le quitó el corazón desde el detalle, ya no debe salir aquí.
+    if (mounted) await _load();
   }
 
   @override

@@ -6,6 +6,7 @@ import '../../services/auth_service.dart';
 import '../../services/chatbot_service.dart';
 import '../../services/places_repository.dart';
 import '../../theme/app_colors.dart';
+import '../place_detail_screen.dart';
 
 /// Chat con Balam: bienvenida con accesos rápidos y, después, la conversación
 /// con tarjetas de lugares recomendados.
@@ -63,8 +64,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _openPlace(ChatPlace place) {
-    // TODO: navegar al detalle del lugar cuando exista la pantalla.
-    _snack('Detalle de "${place.name}" próximamente');
+    Navigator.of(context).push(PlaceDetailScreen.route(place.id, name: place.name));
   }
 
   Future<void> _confirmReset() async {

@@ -12,6 +12,7 @@ import '../services/places_repository.dart';
 import '../theme/app_colors.dart';
 import '../theme/theme_controller.dart';
 import '../utils/text_utils.dart';
+import 'place_detail_screen.dart';
 
 /// Pestaña "Mapa": lugares, hoteles y restaurantes con Google Maps.
 class MapScreen extends StatefulWidget {
@@ -464,8 +465,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _openDetails(MapPoint point) {
-    // TODO: navegar a la pantalla de detalle del lugar.
-    _showMessage('Detalle de "${point.name}" próximamente');
+    Navigator.of(context).push(PlaceDetailScreen.route(point.id, name: point.name));
   }
 
   Future<void> _showNearbyList() async {

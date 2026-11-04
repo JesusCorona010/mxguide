@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'place_detail_screen.dart';
 import '../models/place.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
@@ -161,9 +162,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
     }
   }
 
-  void _openPlace(Place place) {
-    // TODO: navegar a la pantalla de detalle del lugar (GET /places/:id).
-    _showMessage('Detalle de "${place.name}" próximamente');
+  Future<void> _openPlace(Place place) async {
+    await Navigator.of(context).push(PlaceDetailScreen.route(place.id, name: place.name));
+    // Al regresar, se recargan los favoritos por si cambió el corazón en el detalle.
+    if (mounted) await _loadFavorites();
   }
 
   Future<void> _pickState() async {
