@@ -1,10 +1,12 @@
+import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
 import '../models/map_point.dart';
+import '../models/place.dart';
 import '../services/api_client.dart';
 import '../services/places_repository.dart';
 import '../theme/app_colors.dart';
@@ -13,7 +15,12 @@ import '../utils/text_utils.dart';
 
 /// Pestaña "Mapa": lugares, hoteles y restaurantes con Google Maps.
 class MapScreen extends StatefulWidget {
-  const MapScreen({super.key});
+  const MapScreen({super.key, this.isActive = true});
+
+  /// true cuando la pestaña "Mapa" es la que se está viendo. Mientras está en
+  /// false (el usuario está en otra pestaña) el mapa no se toca al cambiar el
+  /// tema: lo actualiza hasta que vuelve a entrar, para no trabar la app.
+  final bool isActive;
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -34,9 +41,17 @@ class _MapScreenState extends State<MapScreen> {
   List<MapPoint> _points = const [];
   bool _isLoadingPoints = true;
 
-  final Set<MapPointType> _activeTypes = {...MapPointType.values};
+  // Los filtros arrancan apagados: el usuario elige qué quiere ver.
+  final Set<MapPointType> _activeTypes = {};
   String _query = '';
   MapPoint? _selected;
+
+  // Ruta dentro de la app.
+  List<LatLng> _route = const [];
+  double? _routeMeters;
+  double? _routeSeconds;
+  bool _routeWalking = true;
+  bool _routeLoading = false;
   LatLng? _userLocation;
   bool _isLocating = false;
 
@@ -44,10 +59,36 @@ class _MapScreenState extends State<MapScreen> {
   Map<String, BitmapDescriptor> _markerIcons = {};
   Brightness? _iconsBrightness;
 
+  // Los íconos de cada modo se dibujan una sola vez y se reutilizan, así
+  // cambiar de tema seguido no vuelve a dibujarlos.
+  final Map<Brightness, Map<String, BitmapDescriptor>> _iconCache = {};
+
+  // Marcadores ya armados. Si no cambió nada, se reusa el mismo conjunto para
+  // que el mapa no tenga que actualizar todos los marcadores en cada rebuild.
+  Set<Marker> _markersCache = const {};
+  List<MapPoint>? _markersPoints;
+  Map<String, BitmapDescriptor>? _markersIcons;
+  String? _markersSelectedId;
+
+  // Modo (oscuro o no) con el que se pintó el mapa por última vez.
+  bool? _mapDark;
+
   @override
   void initState() {
     super.initState();
     _loadPoints();
+  }
+
+  /// El backend guarda restaurantes como 'Gastronomía' y hoteles como 'Hospedaje'.
+  MapPointType _typeOf(Place place) {
+    final cats = place.categories.map(normalizeText).toList();
+    if (cats.any((c) => c.contains('hospedaje') || c.contains('hotel'))) {
+      return MapPointType.hotel;
+    }
+    if (cats.any((c) => c.contains('gastronomia') || c.contains('restaurante'))) {
+      return MapPointType.restaurant;
+    }
+    return MapPointType.place;
   }
 
   Future<void> _loadPoints() async {
@@ -61,7 +102,7 @@ class _MapScreenState extends State<MapScreen> {
             MapPoint(
               id: place.id,
               name: place.name,
-              type: MapPointType.place,
+              type: _typeOf(place),
               latitude: place.latitude,
               longitude: place.longitude,
               subtitle: [place.category, place.state].where((t) => t.isNotEmpty).join(' · '),
@@ -87,10 +128,21 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (widget.isActive) _syncWithTheme();
+  }
+
+  @override
+  void didUpdateWidget(covariant MapScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Al volver a la pestaña se ponen al día los íconos si el tema cambió.
+    if (widget.isActive && !oldWidget.isActive) _syncWithTheme();
+  }
+
+  void _syncWithTheme() {
     final theme = Theme.of(context);
     if (_iconsBrightness != theme.brightness) {
       _iconsBrightness = theme.brightness;
-      _buildMarkerIcons(theme.colorScheme);
+      _buildMarkerIcons(theme.colorScheme, theme.brightness);
     }
   }
 
@@ -103,63 +155,83 @@ class _MapScreenState extends State<MapScreen> {
 
   // ───────────── Marcadores ─────────────
 
-  Future<void> _buildMarkerIcons(ColorScheme colors) async {
+  Future<void> _buildMarkerIcons(ColorScheme colors, Brightness brightness) async {
+    final cached = _iconCache[brightness];
+    if (cached != null) {
+      // Sin setState: se llama justo antes de un build, que ya usará estos íconos.
+      _markerIcons = cached;
+      return;
+    }
     final icons = <String, BitmapDescriptor>{};
     for (final type in MapPointType.values) {
       for (final selected in [false, true]) {
         icons['${type.name}_$selected'] = await _renderMarker(
-          icon: type.icon,
-          background: type.color(colors),
-          iconColor: type.onColor(colors),
+          icon: _outlinedIcon(type),
+          color: type.color(colors),
+          outline: colors.surface,
           selected: selected,
         );
       }
     }
-    if (mounted) setState(() => _markerIcons = icons);
+    _iconCache[brightness] = icons;
+    // Si el tema cambió mientras se dibujaban, estos íconos ya no son los actuales.
+    if (mounted && _iconsBrightness == brightness) setState(() => _markerIcons = icons);
   }
 
-  /// Dibuja el marcador (círculo de color con el ícono del tipo) como imagen.
+  IconData _outlinedIcon(MapPointType type) {
+    switch (type) {
+      case MapPointType.place:
+        return Icons.account_balance_outlined;
+      case MapPointType.hotel:
+        return Icons.hotel_outlined;
+      case MapPointType.restaurant:
+        return Icons.restaurant_outlined;
+    }
+  }
+
+  /// Dibuja el marcador minimalista: ícono de línea sin fondo; al seleccionarlo,
+  /// más grande y con un círculo tenue detrás.
   Future<BitmapDescriptor> _renderMarker({
     required IconData icon,
-    required Color background,
-    required Color iconColor,
+    required Color color,
+    required Color outline,
     required bool selected,
   }) async {
     const ratio = 3.0;
-    final logical = selected ? 52.0 : 40.0;
+    final logical = selected ? 52.0 : 36.0;
     final px = logical * ratio;
     final center = Offset(px / 2, px / 2);
-    final radius = (selected ? 22.0 : 17.0) * ratio;
 
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
 
     if (selected) {
-      canvas.drawCircle(center, px / 2, Paint()..color = background.withAlpha(90));
+      canvas.drawCircle(center, px / 2, Paint()..color = color.withAlpha(60));
     }
-    canvas.drawCircle(center, radius, Paint()..color = background);
-    canvas.drawCircle(
-      center,
-      radius,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2 * ratio
-        ..color = Colors.white,
-    );
 
-    final painter = TextPainter(
-      textDirection: TextDirection.ltr,
-      text: TextSpan(
-        text: String.fromCharCode(icon.codePoint),
-        style: TextStyle(
-          fontSize: (selected ? 24.0 : 18.0) * ratio,
-          fontFamily: icon.fontFamily,
-          package: icon.fontPackage,
-          color: iconColor,
-        ),
-      ),
-    )..layout();
-    painter.paint(canvas, center - Offset(painter.width / 2, painter.height / 2));
+    TextPainter glyph(TextStyle extra) => TextPainter(
+          textDirection: TextDirection.ltr,
+          text: TextSpan(
+            text: String.fromCharCode(icon.codePoint),
+            style: TextStyle(
+              fontSize: (selected ? 30.0 : 24.0) * ratio,
+              fontFamily: icon.fontFamily,
+              package: icon.fontPackage,
+            ).merge(extra),
+          ),
+        )..layout();
+
+    final halo = glyph(TextStyle(
+      foreground: Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3 * ratio
+        ..strokeJoin = StrokeJoin.round
+        ..color = outline,
+    ));
+    final fill = glyph(TextStyle(color: color));
+    final offset = center - Offset(fill.width / 2, fill.height / 2);
+    halo.paint(canvas, offset);
+    fill.paint(canvas, offset);
 
     final image = await recorder.endRecording().toImage(px.round(), px.round());
     final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
@@ -168,7 +240,15 @@ class _MapScreenState extends State<MapScreen> {
 
   Set<Marker> _buildMarkers(List<MapPoint> points) {
     if (_markerIcons.isEmpty) return {};
-    return {
+
+    final selectedId = _selected?.id;
+    if (identical(_markersIcons, _markerIcons) &&
+        _markersSelectedId == selectedId &&
+        _samePoints(_markersPoints, points)) {
+      return _markersCache;
+    }
+
+    final markers = {
       for (final point in points)
         Marker(
           markerId: MarkerId(point.id),
@@ -178,6 +258,20 @@ class _MapScreenState extends State<MapScreen> {
           onTap: () => _selectPoint(point, moveMap: false),
         ),
     };
+
+    _markersCache = markers;
+    _markersPoints = points;
+    _markersIcons = _markerIcons;
+    _markersSelectedId = selectedId;
+    return markers;
+  }
+
+  bool _samePoints(List<MapPoint>? a, List<MapPoint> b) {
+    if (a == null || a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (!identical(a[i], b[i])) return false;
+    }
+    return true;
   }
 
   // ───────────── Datos ─────────────
@@ -185,7 +279,8 @@ class _MapScreenState extends State<MapScreen> {
   List<MapPoint> get _visiblePoints {
     final query = normalizeText(_query);
     return _points.where((point) {
-      final matchesType = _activeTypes.contains(point.type);
+      // Si se busca por nombre, se encuentra aunque el filtro esté apagado.
+      final matchesType = _activeTypes.contains(point.type) || query.isNotEmpty;
       final matchesQuery = query.isEmpty || normalizeText(point.name).contains(query);
       return matchesType && matchesQuery;
     }).toList();
@@ -222,7 +317,10 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _selectPoint(MapPoint point, {bool moveMap = true}) {
-    setState(() => _selected = point);
+    setState(() {
+      if (_selected?.id != point.id) _clearRoute();
+      _selected = point;
+    });
     if (moveMap) _moveCameraTo(LatLng(point.latitude, point.longitude));
   }
 
@@ -240,7 +338,10 @@ class _MapScreenState extends State<MapScreen> {
     setState(() {
       if (!_activeTypes.remove(type)) _activeTypes.add(type);
       // Si el lugar seleccionado quedó oculto, se quita la selección.
-      if (_selected != null && !_activeTypes.contains(_selected!.type)) _selected = null;
+      if (_selected != null && !_activeTypes.contains(_selected!.type)) {
+        _selected = null;
+        _clearRoute();
+      }
     });
   }
 
@@ -289,18 +390,77 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  void _clearRoute() {
+    _route = const [];
+    _routeMeters = null;
+    _routeSeconds = null;
+  }
+
+  /// Traza la ruta dentro de la app (OpenStreetMap, sin llave de API).
   Future<void> _openDirections(MapPoint point) async {
-    final uri = Uri.https('www.google.com', '/maps/dir/', {
-      'api': '1',
-      'destination': '${point.latitude},${point.longitude}',
-      'travelmode': 'walking',
-    });
-    try {
-      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (!opened) _showMessage('No se pudo abrir la ruta');
-    } catch (_) {
-      _showMessage('No se pudo abrir la ruta');
+    if (_routeLoading) return;
+    if (_userLocation == null) {
+      await _goToMyLocation();
+      if (_userLocation == null) return;
     }
+    setState(() => _routeLoading = true);
+    try {
+      final from = _userLocation!;
+      final profile = _routeWalking ? 'routed-foot/route/v1/foot' : 'routed-car/route/v1/driving';
+      final uri = Uri.parse(
+        'https://routing.openstreetmap.de/$profile/'
+        '${from.longitude},${from.latitude};${point.longitude},${point.latitude}'
+        '?overview=full&geometries=geojson',
+      );
+      final response = await http.get(uri).timeout(const Duration(seconds: 15));
+      if (response.statusCode != 200) throw Exception('HTTP ${response.statusCode}');
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final routes = data['routes'] as List? ?? const [];
+      if (routes.isEmpty) {
+        _showMessage('No encontramos una ruta hasta ese lugar');
+        return;
+      }
+      final best = routes.first as Map<String, dynamic>;
+      final coords = (best['geometry']['coordinates'] as List)
+          .map((c) => LatLng((c[1] as num).toDouble(), (c[0] as num).toDouble()))
+          .toList();
+      if (!mounted) return;
+      setState(() {
+        _route = coords;
+        _routeMeters = (best['distance'] as num).toDouble();
+        _routeSeconds = (best['duration'] as num).toDouble();
+      });
+      _fitRoute(coords);
+    } catch (_) {
+      if (mounted) _showMessage('No se pudo trazar la ruta. Revisa tu conexión');
+    } finally {
+      if (mounted) setState(() => _routeLoading = false);
+    }
+  }
+
+  void _fitRoute(List<LatLng> points) {
+    if (points.length < 2) return;
+    var minLat = points.first.latitude, maxLat = minLat;
+    var minLng = points.first.longitude, maxLng = minLng;
+    for (final p in points) {
+      minLat = math.min(minLat, p.latitude);
+      maxLat = math.max(maxLat, p.latitude);
+      minLng = math.min(minLng, p.longitude);
+      maxLng = math.max(maxLng, p.longitude);
+    }
+    _mapController?.animateCamera(
+      CameraUpdate.newLatLngBounds(
+        LatLngBounds(southwest: LatLng(minLat, minLng), northeast: LatLng(maxLat, maxLng)),
+        80,
+      ),
+    );
+  }
+
+  void _setRouteMode(bool walking) {
+    if (_routeWalking == walking) return;
+    setState(() => _routeWalking = walking);
+    final point = _selected;
+    if (point != null && _route.isNotEmpty) _openDirections(point);
   }
 
   void _openDetails(MapPoint point) {
@@ -328,10 +488,10 @@ class _MapScreenState extends State<MapScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Con la pestaña oculta el mapa conserva el estilo anterior.
+    if (widget.isActive || _mapDark == null) _mapDark = isDark;
     final points = _visiblePoints;
     final user = _userLocation;
-    // Los chips solo tienen sentido si hay más de un tipo de punto.
-    final hasSeveralTypes = _points.map((p) => p.type).toSet().length > 1;
 
     return Column(
       children: [
@@ -344,7 +504,20 @@ class _MapScreenState extends State<MapScreen> {
                   zoom: _defaultZoom,
                 ),
                 onMapCreated: (controller) => _mapController = controller,
-                style: isDark ? _darkMapStyle : null,
+                polylines: {
+                  if (_route.isNotEmpty)
+                    Polyline(
+                      polylineId: const PolylineId('route'),
+                      points: _route,
+                      color: Theme.of(context).colorScheme.primary,
+                      width: 6,
+                      jointType: JointType.round,
+                      startCap: Cap.roundCap,
+                      endCap: Cap.roundCap,
+                    ),
+                },
+                // '[]' es el estilo por defecto; con null el mapa no quitaba el oscuro.
+                style: _mapDark! ? _darkMapStyle : '[]',
                 markers: _buildMarkers(points),
                 minMaxZoomPreference: const MinMaxZoomPreference(4, 19),
                 myLocationEnabled: user != null,
@@ -372,9 +545,11 @@ class _MapScreenState extends State<MapScreen> {
                             setState(() => _query = '');
                           },
                         ),
-                        if (hasSeveralTypes) ...[
+                        const SizedBox(height: 10),
+                        _LayerChips(active: _activeTypes, onToggle: _toggleType),
+                        if (_activeTypes.isEmpty && !_isLoadingPoints) ...[
                           const SizedBox(height: 10),
-                          _LayerChips(active: _activeTypes, onToggle: _toggleType),
+                          const _HintPill(text: 'Elige arriba qué quieres ver en el mapa'),
                         ],
                         if (_isLoadingPoints) ...[
                           const SizedBox(height: 10),
@@ -385,6 +560,20 @@ class _MapScreenState extends State<MapScreen> {
                   ),
                 ),
               ),
+              if (_route.isNotEmpty || _routeLoading)
+                Positioned(
+                  left: 16,
+                  right: 80,
+                  bottom: 16,
+                  child: _RoutePanel(
+                    loading: _routeLoading,
+                    walking: _routeWalking,
+                    meters: _routeMeters,
+                    seconds: _routeSeconds,
+                    onMode: _setRouteMode,
+                    onClose: () => setState(_clearRoute),
+                  ),
+                ),
               Positioned(
                 right: 16,
                 bottom: 16,
@@ -407,6 +596,104 @@ class _MapScreenState extends State<MapScreen> {
 }
 
 // ───────────── Widgets ─────────────
+
+class _HintPill extends StatelessWidget {
+  const _HintPill({required this.text});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colors.outline),
+      ),
+      child: Text(text, style: theme.textTheme.bodySmall),
+    );
+  }
+}
+
+class _RoutePanel extends StatelessWidget {
+  const _RoutePanel({
+    required this.loading,
+    required this.walking,
+    required this.meters,
+    required this.seconds,
+    required this.onMode,
+    required this.onClose,
+  });
+
+  final bool loading;
+  final bool walking;
+  final double? meters;
+  final double? seconds;
+  final ValueChanged<bool> onMode;
+  final VoidCallback onClose;
+
+  String get _summary {
+    if (meters == null || seconds == null) return 'Calculando ruta…';
+    final km = meters! < 1000 ? '${meters!.round()} m' : '${(meters! / 1000).toStringAsFixed(1)} km';
+    final min = (seconds! / 60).ceil();
+    final time = min < 60 ? '$min min' : '${min ~/ 60} h ${min % 60} min';
+    return '$km · $time';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    return Material(
+      color: colors.surface,
+      elevation: 3,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 6, 4, 6),
+        child: Row(
+          children: [
+            if (loading)
+              const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+            else
+              Icon(walking ? Icons.directions_walk_rounded : Icons.directions_car_rounded,
+                  color: colors.primary, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                _summary,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ),
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              tooltip: 'Caminando',
+              icon: Icon(Icons.directions_walk_rounded,
+                  color: walking ? colors.primary : colors.onSurfaceVariant),
+              onPressed: () => onMode(true),
+            ),
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              tooltip: 'En auto',
+              icon: Icon(Icons.directions_car_rounded,
+                  color: !walking ? colors.primary : colors.onSurfaceVariant),
+              onPressed: () => onMode(false),
+            ),
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              tooltip: 'Quitar ruta',
+              icon: const Icon(Icons.close_rounded),
+              onPressed: onClose,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _MapSearchBar extends StatelessWidget {
   const _MapSearchBar({

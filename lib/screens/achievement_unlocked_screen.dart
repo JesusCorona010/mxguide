@@ -81,7 +81,7 @@ class _AchievementUnlockedScreenState extends State<AchievementUnlockedScreen>
   }
 
   void _share() {
-    // TODO: compartir en redes (por ejemplo con el paquete share_plus).
+    
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(const SnackBar(content: Text('Compartir estará disponible pronto')));

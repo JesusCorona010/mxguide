@@ -4,6 +4,7 @@ import 'explore_screen.dart';
 import 'map_screen.dart';
 import 'achievements_screen.dart';
 import 'profile/profile_screen.dart';
+import 'add_screen.dart';
 import '../services/nearby_alerts_service.dart';
 
 /// Pantalla principal con la barra de navegación inferior y el botón "+".
@@ -17,15 +18,20 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
+  // Pestañas que ya se abrieron al menos una vez. El resto no se construye
+  // todavía: así el mapa (que es pesado) arranca solo cuando entras a "Mapa".
+  final Set<int> _opened = {0};
+
+  static const _mapTab = 1;
   static const _achievementsTab = 2;
 
   // IndexedStack mantiene el estado de cada pestaña (búsqueda, scroll, filtros)
-  // aunque cambies de una a otra.
+  // aunque cambies de una a otra, pero solo de las que ya abriste.
   late final List<Widget> _tabs = [
     const ExploreScreen(),
-    const MapScreen(),
+    const SizedBox.shrink(), // Mapa: se arma en build() para avisarle si está activo.
     const AchievementsScreen(),
-    ProfileScreen(onOpenAchievements: () => setState(() => _currentIndex = _achievementsTab)),
+    ProfileScreen(onOpenAchievements: () => _selectTab(_achievementsTab)),
   ];
 
   @override
@@ -35,11 +41,15 @@ class _HomeScreenState extends State<HomeScreen> {
     NearbyAlertsService.instance.restore();
   }
 
+  void _selectTab(int index) {
+    setState(() {
+      _currentIndex = index;
+      _opened.add(index);
+    });
+  }
+
   void _onAddPressed() {
-    // TODO: definir qué hace el botón "+" (agregar lugar, reseña, etc.).
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(const SnackBar(content: Text('Esta función estará disponible pronto')));
+    Navigator.of(context).push(AddScreen.route());
   }
 
   @override
@@ -51,7 +61,18 @@ class _HomeScreenState extends State<HomeScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
-        body: IndexedStack(index: _currentIndex, children: _tabs),
+        body: IndexedStack(
+          index: _currentIndex,
+          children: [
+            for (var i = 0; i < _tabs.length; i++)
+              if (!_opened.contains(i))
+                const SizedBox.shrink()
+              else if (i == _mapTab)
+                MapScreen(isActive: _currentIndex == _mapTab)
+              else
+                _tabs[i],
+          ],
+        ),
         floatingActionButton: FloatingActionButton(
           tooltip: 'Agregar',
           onPressed: _onAddPressed,
@@ -77,14 +98,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 activeIcon: Icons.explore,
                 label: 'Explorar',
                 selected: _currentIndex == 0,
-                onTap: () => setState(() => _currentIndex = 0),
+                onTap: () => _selectTab(0),
               ),
               _NavItem(
                 icon: Icons.map_outlined,
                 activeIcon: Icons.map,
                 label: 'Mapa',
                 selected: _currentIndex == 1,
-                onTap: () => setState(() => _currentIndex = 1),
+                onTap: () => _selectTab(1),
               ),
               const SizedBox(width: 72), // Hueco para el botón "+".
               _NavItem(
@@ -92,14 +113,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 activeIcon: Icons.emoji_events,
                 label: 'Logros',
                 selected: _currentIndex == 2,
-                onTap: () => setState(() => _currentIndex = 2),
+                onTap: () => _selectTab(2),
               ),
               _NavItem(
                 icon: Icons.person_outline_rounded,
                 activeIcon: Icons.person_rounded,
                 label: 'Perfil',
                 selected: _currentIndex == 3,
-                onTap: () => setState(() => _currentIndex = 3),
+                onTap: () => _selectTab(3),
               ),
             ],
           ),

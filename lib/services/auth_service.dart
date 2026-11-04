@@ -50,6 +50,12 @@ class AuthService extends ChangeNotifier {
     await _startSession(data);
   }
 
+  /// Inicia sesión con el idToken que entrega Google (POST /auth/google).
+  Future<void> loginWithGoogle(String idToken) async {
+    final data = await _api.post('/auth/google', body: {'idToken': idToken});
+    await _startSession(data);
+  }
+
   /// Vuelve a pedir los datos del usuario. Si el token ya no sirve, cierra sesión.
   Future<void> refreshUser() async {
     try {
