@@ -8,7 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../screens/chat/chat_screen.dart';
 import '../services/chatbot_service.dart';
 
-/// Burbuja flotante de Balam (estilo Mercado Pago) encima de [child].
+/// Burbuja flotante de Mictlan (estilo Mercado Pago) encima de [child].
 ///
 /// - Tócala para abrir el chat.
 /// - Arrástrala a donde quieras: al soltarla se pega al borde más cercano.
@@ -120,7 +120,7 @@ class _ChatBubbleOverlayState extends State<ChatBubbleOverlay> {
         ..hideCurrentSnackBar()
         ..showSnackBar(
           SnackBar(
-            content: const Text('Ocultaste a Balam. Puedes activarlo en Perfil.'),
+            content: const Text('Ocultaste a Mictlan. Puedes activarlo en Perfil.'),
             action: SnackBarAction(label: 'Deshacer', onPressed: () => _chat.setBubbleVisible(true)),
           ),
         );
@@ -217,7 +217,7 @@ class _Bubble extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: 'Abrir chat con Balam, tu guía de viaje',
+      label: 'Abrir chat con Mictlan, tu guía de viaje',
       child: Material(
         color: colors.primary,
         shape: CircleBorder(side: BorderSide(color: colors.tertiary, width: 3)),
@@ -233,7 +233,7 @@ class _Bubble extends StatelessWidget {
               alignment: Alignment.center,
               children: [
                 Icon(Icons.auto_awesome_rounded, color: colors.onPrimary, size: size * 0.46),
-                // Mientras Balam piensa, un anillo girando alrededor.
+                // Mientras Mictlan piensa, un anillo girando alrededor.
                 if (busy)
                   SizedBox(
                     width: size - 6,
@@ -294,7 +294,7 @@ class _Teaser extends StatelessWidget {
               const TextSpan(
                 children: [
                   TextSpan(text: '¿No sabes a dónde ir?\n', style: TextStyle(fontWeight: FontWeight.w800)),
-                  TextSpan(text: 'Pregúntale a Balam, tu guía de viaje.'),
+                  TextSpan(text: 'Pregúntale a Mictlan, tu guía de viaje.'),
                 ],
               ),
               style: theme.textTheme.bodySmall?.copyWith(color: Colors.white, height: 1.35),

@@ -62,7 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
-        // La burbuja de Balam flota encima de todas las pestañas.
+        // La burbuja de Mictlan flota encima de todas las pestañas.
         body: ChatBubbleOverlay(
           child: IndexedStack(
             index: _currentIndex,

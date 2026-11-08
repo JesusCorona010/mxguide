@@ -9,7 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../config/chatbot_config.dart';
 import 'auth_service.dart';
 
-/// Un lugar que Balam recomendó (viene del catálogo de MXGuide).
+/// Un lugar que Mictlan recomendó (viene del catálogo de MXGuide).
 class ChatPlace {
   const ChatPlace({
     required this.id,
@@ -54,7 +54,7 @@ class ChatMessage {
   bool get isUser => author == ChatAuthor.user;
 }
 
-/// Conversación con Balam. Vive mientras la app está abierta, así que al
+/// Conversación con Mictlan. Vive mientras la app está abierta, así que al
 /// cerrar y volver a abrir la burbuja la plática sigue ahí.
 class ChatbotService extends ChangeNotifier {
   ChatbotService._();
@@ -181,8 +181,8 @@ class ChatbotService extends ChangeNotifier {
       _lastFailedText = text;
       final message = switch (error) {
         _ChatError(:final message) => message,
-        TimeoutException() => 'Balam tardó demasiado en responder. Intenta de nuevo.',
-        _ => 'No pudimos conectar con Balam. Revisa tu internet.',
+        TimeoutException() => 'Mictlan tardó demasiado en responder. Intenta de nuevo.',
+        _ => 'No pudimos conectar con Mictlan. Revisa tu internet.',
       };
       _messages.add(ChatMessage(author: ChatAuthor.bot, text: message, isError: true));
     } finally {
@@ -196,7 +196,7 @@ class ChatbotService extends ChangeNotifier {
   static String _errorFor(int status) => switch (status) {
         401 => 'El chat no está bien configurado (llave inválida).',
         429 => 'Vas muy rápido. Espera un momento y vuelve a preguntar.',
-        503 => 'Balam está descansando un momento. Intenta de nuevo en un rato.',
+        503 => 'Mictlan está descansando un momento. Intenta de nuevo en un rato.',
         _ => 'Algo salió mal (código $status). Intenta de nuevo.',
       };
 
