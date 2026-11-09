@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -101,10 +102,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _goToHome() => Navigator.of(context).pushReplacementNamed('/home');
 
-  void _showComingSoon(String feature) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text('$feature estará disponible pronto')));
+  void _goToForgotPassword() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ForgotPasswordScreen(initialEmail: _emailController.text.trim()),
+      ),
+    );
   }
 
   // ───────────── UI ─────────────
@@ -213,7 +216,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Align(
       alignment: Alignment.centerRight,
       child: TextButton(
-        onPressed: () => _showComingSoon('Recuperar contraseña'),
+        onPressed: _isBusy ? null : _goToForgotPassword,
         child: const Text('¿Olvidaste tu contraseña?', style: TextStyle(fontSize: 13)),
       ),
     );

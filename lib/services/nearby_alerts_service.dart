@@ -20,7 +20,15 @@ class NearbyAlertsService extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _enabled = prefs.getBool(_key) ?? false;
     notifyListeners();
-    if (_enabled) await _start();
+    if (_enabled) {
+      await _start();
+      // Si el usuario quitó los permisos desde los ajustes, se apaga.
+      if (!ProximityService.instance.isActive) {
+        _enabled = false;
+        notifyListeners();
+        await prefs.setBool(_key, false);
+      }
+    }
   }
 
   /// Prende o apaga los avisos. Regresa false si no se pudo prender

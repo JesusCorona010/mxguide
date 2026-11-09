@@ -38,6 +38,9 @@ class ProximityService {
 
   bool get isActive => _active;
 
+  /// Por qué no se pudo prender la última vez: 'notifications' o 'location'.
+  String? lastFailure;
+
   /// Cambia la lista de lugares que se vigilan (por ejemplo, cuando Explorar
   /// termina de cargarlos desde la API, o al hacer un refresh). No hace
   /// falta reiniciar el listener de ubicación: el próximo chequeo ya usa la
@@ -58,19 +61,29 @@ class ProximityService {
     _places = places;
     if (_active || _starting) return;
     _starting = true;
+    lastFailure = null;
 
     try {
+      var notificationsAllowed = true;
       try {
-        await _initNotifications();
+        notificationsAllowed = await _initNotifications();
       } catch (_) {
         // flutter_local_notifications no tiene soporte en Flutter Web (por
         // eso no truena, pero tampoco muestra la notificación del sistema
         // ahí). El resto — flotante, historial, badge — no depende de esta
         // librería y sigue funcionando igual.
       }
+      // Si el usuario negó las notificaciones, el aviso no se activa.
+      if (!notificationsAllowed) {
+        lastFailure = 'notifications';
+        return;
+      }
 
       final hasLocationPermission = await _ensureLocationPermission();
-      if (!hasLocationPermission) return;
+      if (!hasLocationPermission) {
+        lastFailure = 'location';
+        return;
+      }
 
       const locationSettings = LocationSettings(
         accuracy: LocationAccuracy.medium,
@@ -117,22 +130,34 @@ class ProximityService {
     _active = false;
   }
 
-  Future<void> _initNotifications() async {
+  /// Devuelve false si el usuario negó el permiso de notificaciones.
+  Future<bool> _initNotifications() async {
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
     );
     const settings = InitializationSettings(android: androidSettings, iOS: iosSettings);
     await _notifications.initialize(settings);
 
     // Android 13+ pide el permiso de notificaciones en tiempo de ejecución.
     if (defaultTargetPlatform == TargetPlatform.android) {
-      await _notifications
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-          ?.requestNotificationsPermission();
+      final android = _notifications
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      final granted = await android?.requestNotificationsPermission();
+      if (granted == false) return false;
+      // En versiones anteriores a Android 13 no hay pregunta: se revisa si
+      // el usuario las apagó desde los ajustes del sistema.
+      return await android?.areNotificationsEnabled() ?? true;
     }
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      final granted = await _notifications
+          .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(alert: true, badge: true, sound: true);
+      return granted ?? false;
+    }
+    return true;
   }
 
   Future<bool> _ensureLocationPermission() async {

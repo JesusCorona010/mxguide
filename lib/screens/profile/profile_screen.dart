@@ -6,6 +6,7 @@ import '../../models/app_user.dart';
 import '../../services/auth_service.dart';
 import '../../services/chatbot_service.dart';
 import '../../services/nearby_alerts_service.dart';
+import '../../services/proximity_service.dart';
 import '../../services/progress_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/theme_controller.dart';
@@ -219,7 +220,13 @@ class ProfileScreen extends StatelessWidget {
   static Future<void> _toggleAlerts(BuildContext context, bool value) async {
     final ok = await NearbyAlertsService.instance.setEnabled(value);
     if (!ok && context.mounted) {
-      _snack(context, 'Necesitamos permiso de ubicación para avisarte de lugares cercanos');
+      final reason = ProximityService.instance.lastFailure;
+      _snack(
+        context,
+        reason == 'notifications'
+            ? 'Activa las notificaciones de MXGuide para recibir avisos de lugares cercanos'
+            : 'Necesitamos permiso de ubicación para avisarte de lugares cercanos',
+      );
     }
   }
 
