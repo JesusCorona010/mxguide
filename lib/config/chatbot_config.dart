@@ -1,4 +1,4 @@
-/// Configuración del chatbot Balam (servicio aparte: repo mxguide-chatbot).
+/// Configuración del chatbot Mictlan (servicio aparte: repo mxguide-chatbot).
 ///
 /// Se puede cambiar sin tocar código al compilar:
 ///   flutter run --dart-define=CHATBOT_URL=https://... --dart-define=CHATBOT_API_KEY=...

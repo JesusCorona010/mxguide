@@ -15,7 +15,7 @@ import 'achievement_unlocked_screen.dart';
 import 'chat/chat_screen.dart';
 
 /// Detalle de un lugar turístico: fotos, información, insignia del estado,
-/// cómo llegar, preguntas a Balam y reseñas.
+/// cómo llegar, preguntas a Mictlan y reseñas.
 class PlaceDetailScreen extends StatefulWidget {
   const PlaceDetailScreen({super.key, required this.placeId, this.initialName});
 
@@ -178,7 +178,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     }
   }
 
-  void _askBalam(PlaceDetail place, String question) {
+  void _askMictlan(PlaceDetail place, String question) {
     ChatbotService.instance.send('Sobre ${place.name} (${place.locationLabel}): $question');
     Navigator.of(context).push(ChatScreen.route());
   }
@@ -400,9 +400,9 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                     const _SectionTitle('Ubicación'),
                     _LocationCard(place: place, onOpen: () => _openMaps(place)),
 
-                    // ── Balam ──
+                    // ── Mictlan ──
                     const SizedBox(height: 22),
-                    _AskBalamCard(onAsk: (q) => _askBalam(place, q)),
+                    _AskMictlanCard(onAsk: (q) => _askMictlan(place, q)),
 
                     // ── Cerca de aquí ──
                     const SizedBox(height: 26),
@@ -740,8 +740,8 @@ class _LocationCard extends StatelessWidget {
   }
 }
 
-class _AskBalamCard extends StatelessWidget {
-  const _AskBalamCard({required this.onAsk});
+class _AskMictlanCard extends StatelessWidget {
+  const _AskMictlanCard({required this.onAsk});
 
   final ValueChanged<String> onAsk;
 
@@ -777,7 +777,7 @@ class _AskBalamCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Pregúntale a Balam',
+                      'Pregúntale a Mictlan',
                       style: theme.textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w800),
                     ),
                     Text(

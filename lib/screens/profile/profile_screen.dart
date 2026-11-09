@@ -130,7 +130,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   MenuTile(
                     icon: Icons.auto_awesome_rounded,
-                    title: 'Burbuja de Balam',
+                    title: 'Burbuja de Mictlan',
                     subtitle: 'Tu guía de viaje flotando en la app',
                     showChevron: false,
                     onTap: () => chatbot.setBubbleVisible(!chatbot.bubbleVisible),

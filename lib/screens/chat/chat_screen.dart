@@ -8,7 +8,7 @@ import '../../services/places_repository.dart';
 import '../../theme/app_colors.dart';
 import '../place_detail_screen.dart';
 
-/// Chat con Balam: bienvenida con accesos rápidos y, después, la conversación
+/// Chat con Mictlan: bienvenida con accesos rápidos y, después, la conversación
 /// con tarjetas de lugares recomendados.
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -72,7 +72,7 @@ class _ChatScreenState extends State<ChatScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('¿Nueva conversación?'),
-        content: const Text('Se borrará la plática actual con Balam.'),
+        content: const Text('Se borrará la plática actual con Mictlan.'),
         actions: [
           TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancelar')),
           FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Empezar de nuevo')),
@@ -103,14 +103,14 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             title: Row(
               children: [
-                const _BalamAvatar(size: 40),
+                const _MictlanAvatar(size: 40),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Balam', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                      Text('Mictlan', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
                       Text(
                         _chat.isSending ? 'Escribiendo…' : 'Tu guía de viaje por México',
                         style: theme.textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
@@ -171,7 +171,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
                   child: Text(
-                    'Balam puede equivocarse. Confirma horarios y precios antes de ir.',
+                    'Mictlan puede equivocarse. Confirma horarios y precios antes de ir.',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.labelSmall?.copyWith(color: colors.onSurfaceVariant),
                   ),
@@ -234,7 +234,7 @@ class _WelcomeState extends State<_Welcome> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
       children: [
-        const Center(child: _BalamAvatar(size: 96)),
+        const Center(child: _MictlanAvatar(size: 96)),
         const SizedBox(height: 16),
         Text(
           name == null || name.isEmpty ? '¡Hola!\n¿A dónde vamos hoy?' : '¡Hola, $name!\n¿A dónde vamos hoy?',
@@ -243,7 +243,7 @@ class _WelcomeState extends State<_Welcome> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Soy Balam, tu guía de viaje. Te recomiendo lugares, armo itinerarios y te digo cómo llegar.',
+          'Soy Mictlan, tu guía de viaje. Te recomiendo lugares, armo itinerarios y te digo cómo llegar.',
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant, height: 1.45),
         ),
@@ -581,7 +581,7 @@ class _TypingBubbleState extends State<_TypingBubble> with SingleTickerProviderS
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Semantics(
-            label: 'Balam está escribiendo',
+            label: 'Mictlan está escribiendo',
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
@@ -620,7 +620,7 @@ class _TypingBubbleState extends State<_TypingBubble> with SingleTickerProviderS
             Padding(
               padding: const EdgeInsets.only(top: 6, left: 4),
               child: Text(
-                'Balam se está despertando, puede tardar un poco…',
+                'Mictlan se está despertando, puede tardar un poco…',
                 style: theme.textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
               ),
             ),
@@ -696,7 +696,7 @@ class _InputBar extends StatelessWidget {
               textInputAction: TextInputAction.send,
               onSubmitted: (_) => onSend(),
               decoration: InputDecoration(
-                hintText: 'Pregúntale a Balam…',
+                hintText: 'Pregúntale a Mictlan…',
                 counterText: '',
                 filled: true,
                 fillColor: colors.surface,
@@ -732,8 +732,8 @@ class _InputBar extends StatelessWidget {
   }
 }
 
-class _BalamAvatar extends StatelessWidget {
-  const _BalamAvatar({required this.size});
+class _MictlanAvatar extends StatelessWidget {
+  const _MictlanAvatar({required this.size});
 
   final double size;
 

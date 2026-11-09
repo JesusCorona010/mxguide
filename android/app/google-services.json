@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "401909463498",
+    "project_id": "mxguide-33dcc",
+    "storage_bucket": "mxguide-33dcc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:401909463498:android:eaf5671869aa97510ab733",
+        "android_client_info": {
+          "package_name": "com.morgan.mx_guide"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCRoEnAWt32__AFj7Q_nyldSsA1-wRcbYA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
