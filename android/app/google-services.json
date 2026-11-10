@@ -12,7 +12,15 @@
           "package_name": "com.morgan.mx_guide"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [  
+        {
+      "client_id": "942836119956-7r9cv9131l4mp8hjq8oeg7kdmvhct80m.apps.googleusercontent.com",
+      "client_type": 1,
+      "android_info": {
+      "package_name": "com.morgan.mx_guide",
+      "certificate_hash": "BF:52:1B:0C:AE:5E:87:B2:BF:9B:88:3B:AB:46:87:94:05:36:5C:02"
+      }
+    }],
       "api_key": [
         {
           "current_key": "AIzaSyCRoEnAWt32__AFj7Q_nyldSsA1-wRcbYA"
