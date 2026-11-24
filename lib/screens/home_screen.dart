@@ -5,6 +5,10 @@ import 'map_screen.dart';
 import 'achievements_screen.dart';
 import 'profile/profile_screen.dart';
 import 'add_screen.dart';
+import 'achievement_unlocked_screen.dart';
+import '../data/achievements_data.dart';
+import '../services/progress_service.dart';
+import '../services/welcome_badge_service.dart';
 import '../services/nearby_alerts_service.dart';
 import '../widgets/chat_bubble_overlay.dart';
 
@@ -40,6 +44,23 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     // Si el usuario dejó prendidos los avisos de lugares cercanos, arrancan.
     NearbyAlertsService.instance.restore();
+    // Primera vez de esta cuenta: insignia del estado donde está.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _grantWelcomeBadge());
+  }
+
+  Future<void> _grantWelcomeBadge() async {
+    final progress = ProgressService.instance;
+    await progress.syncWithSession();
+    final achievement = await WelcomeBadgeService.instance.tryGrant();
+    if (achievement == null || !mounted) return;
+    await Navigator.of(context).push(
+      AchievementUnlockedScreen.route(
+        achievement: achievement,
+        visitedStates: progress.visitedStates.length,
+        totalStates: stateAchievements.length,
+        kicker: '¡BIENVENIDO A MXGUIDE!',
+      ),
+    );
   }
 
   void _selectTab(int index) {

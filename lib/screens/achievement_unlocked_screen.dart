@@ -12,17 +12,22 @@ class AchievementUnlockedScreen extends StatefulWidget {
     required this.achievement,
     required this.visitedStates,
     required this.totalStates,
+    this.kicker = '¡LOGRO DESBLOQUEADO!',
   });
 
   final StateAchievement achievement;
   final int visitedStates;
   final int totalStates;
 
+  /// Texto chico arriba del título (por ejemplo "¡BIENVENIDO A MXGUIDE!").
+  final String kicker;
+
   /// Abre la pantalla con una transición de desvanecido.
   static Route<void> route({
     required StateAchievement achievement,
     required int visitedStates,
     required int totalStates,
+    String kicker = '¡LOGRO DESBLOQUEADO!',
   }) {
     return PageRouteBuilder<void>(
       opaque: true,
@@ -31,6 +36,7 @@ class AchievementUnlockedScreen extends StatefulWidget {
         achievement: achievement,
         visitedStates: visitedStates,
         totalStates: totalStates,
+        kicker: kicker,
       ),
       transitionsBuilder: (context, animation, secondaryAnimation, child) =>
           FadeTransition(opacity: animation, child: child),
@@ -78,13 +84,6 @@ class _AchievementUnlockedScreenState extends State<AchievementUnlockedScreen>
     _glowController.dispose();
     _confettiController.dispose();
     super.dispose();
-  }
-
-  void _share() {
-    
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(const SnackBar(content: Text('Compartir estará disponible pronto')));
   }
 
   @override
@@ -178,7 +177,7 @@ class _AchievementUnlockedScreenState extends State<AchievementUnlockedScreen>
                           child: Column(
                             children: [
                               Text(
-                                '¡LOGRO DESBLOQUEADO!',
+                                widget.kicker,
                                 textAlign: TextAlign.center,
                                 style: theme.textTheme.labelLarge?.copyWith(
                                   color: ochre,
@@ -234,17 +233,6 @@ class _AchievementUnlockedScreenState extends State<AchievementUnlockedScreen>
                                 ),
                                 onPressed: () => Navigator.of(context).pop(),
                                 child: const Text('¡A seguir explorando!'),
-                              ),
-                              const SizedBox(height: 10),
-                              OutlinedButton.icon(
-                                style: OutlinedButton.styleFrom(
-                                  backgroundColor: Colors.transparent,
-                                  foregroundColor: Colors.white,
-                                  side: const BorderSide(color: Colors.white30),
-                                ),
-                                onPressed: _share,
-                                icon: const Icon(Icons.share_rounded, size: 20),
-                                label: const Text('Compartir logro'),
                               ),
                             ],
                           ),

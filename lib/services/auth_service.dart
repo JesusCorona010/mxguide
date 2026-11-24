@@ -106,6 +106,14 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    if (_googleReady) {
+      try {
+        // Sin esto, Google vuelve a entrar con la misma cuenta sin preguntar.
+        await GoogleSignIn.instance.signOut();
+      } catch (_) {
+        // Si falla, la sesión de MXGuide se cierra de todos modos.
+      }
+    }
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
     _api.token = null;

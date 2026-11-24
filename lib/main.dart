@@ -22,9 +22,16 @@ Future<void> main() async {
   // Preferencias guardadas en el celular: tema y progreso de insignias.
   await Future.wait([
     themeController.load(),
-    ProgressService.instance.load(),
+    ProgressService.instance.syncWithSession(),
     ChatbotService.instance.loadPreferences(),
   ]);
+
+  // Al iniciar o cerrar sesión (o cambiar de cuenta), cada cuenta carga su
+  // propio progreso y la plática con el asistente empieza de cero.
+  AuthService.instance.addListener(() async {
+    final changed = await ProgressService.instance.syncWithSession();
+    if (changed) ChatbotService.instance.reset();
+  });
 
   runApp(const MxGuideApp());
 }

@@ -6,6 +6,7 @@ import '../../services/auth_service.dart';
 import '../../services/chatbot_service.dart';
 import '../../services/places_repository.dart';
 import '../../theme/app_colors.dart';
+import '../../widgets/chat_markdown_text.dart';
 import '../place_detail_screen.dart';
 
 /// Chat con Mictlan: bienvenida con accesos rápidos y, después, la conversación
@@ -396,7 +397,8 @@ class _BotMessage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SelectableText(message.text, style: theme.textTheme.bodyLarge?.copyWith(height: 1.45)),
+                // Las respuestas de la IA vienen en Markdown (**negritas**, listas…).
+                ChatMarkdownText(message.text, style: theme.textTheme.bodyLarge?.copyWith(height: 1.45)),
                 if (onRetry != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 6),

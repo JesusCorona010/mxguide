@@ -4,7 +4,6 @@ import '../models/achievement.dart';
 import '../services/progress_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/achievement_medal.dart';
-import 'achievement_unlocked_screen.dart';
 
 enum _MedalFilter { all, unlocked, locked }
 
@@ -56,21 +55,6 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     return list;
   }
 
-  /// Desbloquea una medalla y muestra la celebración.
-  /// TODO(backend): esto debe dispararse cuando el usuario marque como
-  /// visitado un lugar de un estado nuevo.
-  Future<void> _unlock(StateAchievement achievement) async {
-    await _progress.registerVisit(achievement.state);
-    if (!mounted) return;
-    await Navigator.of(context).push(
-      AchievementUnlockedScreen.route(
-        achievement: achievement,
-        visitedStates: _progress.visitedStates.length,
-        totalStates: stateAchievements.length,
-      ),
-    );
-  }
-
   void _showDetails(StateAchievement achievement) {
     showModalBottomSheet<void>(
       context: context,
@@ -78,10 +62,6 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       builder: (sheetContext) => _MedalDetailsSheet(
         achievement: achievement,
         unlocked: _isUnlocked(achievement),
-        onSimulateVisit: () {
-          Navigator.of(sheetContext).pop();
-          _unlock(achievement);
-        },
       ),
     );
   }
@@ -397,12 +377,10 @@ class _MedalDetailsSheet extends StatelessWidget {
   const _MedalDetailsSheet({
     required this.achievement,
     required this.unlocked,
-    required this.onSimulateVisit,
   });
 
   final StateAchievement achievement;
   final bool unlocked;
-  final VoidCallback onSimulateVisit;
 
   @override
   Widget build(BuildContext context) {
@@ -427,19 +405,10 @@ class _MedalDetailsSheet extends StatelessWidget {
             Text(
               unlocked
                   ? achievement.description
-                  : 'Visita cualquier lugar de ${achievement.state} para desbloquear esta medalla.',
+                  : 'Abre cualquier lugar de ${achievement.state} y toca “Ya lo visité” para desbloquear esta medalla.',
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant, height: 1.4),
             ),
-            if (!unlocked) ...[
-              const SizedBox(height: 20),
-              // TODO(backend): quitar este botón cuando el desbloqueo sea real.
-              OutlinedButton.icon(
-                onPressed: onSimulateVisit,
-                icon: const Icon(Icons.science_outlined, size: 18),
-                label: const Text('Simular visita (demo)'),
-              ),
-            ],
           ],
         ),
       ),
