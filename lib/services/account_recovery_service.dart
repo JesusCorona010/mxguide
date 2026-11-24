@@ -2,16 +2,15 @@ import 'api_client.dart';
 
 /// Recuperación de contraseña (rutas /account-recovery del backend).
 ///
-/// TODO(backend): hoy el backend genera un token largo y no envía correo. Se
-/// va a cambiar para usar un código de 4 dígitos enviado al correo del usuario.
+/// El backend envía por correo un código de 6 caracteres (A-Z y 0-9).
 /// Cuando cambien las rutas o los campos, solo hay que ajustar este archivo.
-/// Nunca se debe usar el `devToken` que hoy devuelve /request: es solo de pruebas.
+/// Nunca se debe usar el `devToken` que pudiera devolver /request: es solo de pruebas.
 class AccountRecoveryService {
   AccountRecoveryService._();
   static final instance = AccountRecoveryService._();
 
   /// Longitud del código que escribe el usuario.
-  static const codeLength = 4;
+  static const codeLength = 6;
 
   final _api = ApiClient.instance;
 
@@ -23,8 +22,8 @@ class AccountRecoveryService {
 
   /// Cambia la contraseña con el código recibido.
   ///
-  /// TODO(backend): hoy la ruta recibe { token, newPassword }. [email] se
-  /// recibe para cuando el código de 4 dígitos necesite ir junto al correo.
+  /// La ruta recibe { token, newPassword }. [email] se recibe por si el backend
+  /// pide algún día el correo junto al código.
   Future<void> resetPassword({
     required String email,
     required String code,

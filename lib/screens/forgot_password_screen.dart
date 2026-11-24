@@ -9,7 +9,7 @@ import '../services/api_client.dart';
 
 enum _Step { email, code, done }
 
-/// Recuperar contraseña: correo → código de 4 dígitos + nueva contraseña → listo.
+/// Recuperar contraseña: correo → código de 6 caracteres + nueva contraseña → listo.
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key, this.initialEmail});
 
@@ -103,7 +103,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     FocusScope.of(context).unfocus();
 
     final codeOk = _codeController.text.length == AccountRecoveryService.codeLength;
-    setState(() => _codeError = codeOk ? null : 'Escribe el código de 4 dígitos');
+    setState(() => _codeError = codeOk ? null : 'Escribe el código de 6 caracteres');
     final passwordsOk = _passwordFormKey.currentState!.validate();
     if (!codeOk || !passwordsOk) return;
 
@@ -233,7 +233,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             title: '¿Olvidaste tu contraseña?',
             subtitle: [
               TextSpan(
-                text: 'Escribe el correo de tu cuenta y te enviaremos un código de 4 dígitos '
+                text: 'Escribe el correo de tu cuenta y te enviaremos un código de 6 caracteres '
                     'para crear una nueva.',
               ),
             ],
@@ -315,7 +315,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             icon: Icons.mark_email_read_outlined,
             title: 'Revisa tu correo',
             subtitle: [
-              const TextSpan(text: 'Enviamos un código de 4 dígitos a '),
+              const TextSpan(text: 'Enviamos un código de 6 caracteres a '),
               TextSpan(
                 text: _email,
                 style: TextStyle(fontWeight: FontWeight.w700, color: colors.onSurface),
@@ -498,7 +498,7 @@ class _StepHeader extends StatelessWidget {
   }
 }
 
-/// Casillas del código. Un solo campo invisible recibe el teclado numérico y
+/// Casillas del código. Un solo campo invisible recibe el teclado (letras y números) y
 /// las casillas solo muestran lo que se ha escrito.
 class _CodeInput extends StatelessWidget {
   const _CodeInput({
@@ -538,10 +538,10 @@ class _CodeInput extends StatelessWidget {
                 children: [
                   for (var i = 0; i < length; i++)
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: Container(
-                        width: 58,
-                        height: 66,
+                        width: 46,
+                        height: 62,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
                           color: colors.surface,
@@ -574,10 +574,15 @@ class _CodeInput extends StatelessWidget {
                 controller: controller,
                 focusNode: focusNode,
                 enabled: enabled,
-                keyboardType: TextInputType.number,
+                keyboardType: TextInputType.visiblePassword,
+                textCapitalization: TextCapitalization.characters,
+                autocorrect: false,
+                enableSuggestions: false,
                 autofillHints: const [AutofillHints.oneTimeCode],
                 inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
+                  // El código del backend usa A-Z y 0-9 (siempre en mayúsculas).
+                  FilteringTextInputFormatter.allow(RegExp('[A-Za-z0-9]')),
+                  _UpperCaseFormatter(),
                   LengthLimitingTextInputFormatter(length),
                 ],
                 showCursor: false,
@@ -591,6 +596,13 @@ class _CodeInput extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Pasa lo que se escribe a mayúsculas (el código solo tiene A-Z y 0-9).
+class _UpperCaseFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) =>
+      newValue.copyWith(text: newValue.text.toUpperCase());
 }
 
 class _Rule extends StatelessWidget {
