@@ -120,7 +120,7 @@ class _ChatBubbleOverlayState extends State<ChatBubbleOverlay> {
         ..hideCurrentSnackBar()
         ..showSnackBar(
           SnackBar(
-            content: const Text('Ocultaste a Mictlan. Puedes activarlo en Perfil.'),
+            content: const Text('Ocultaste a Mictlan. Ábrelo cuando quieras con el botón de arriba.'),
             action: SnackBarAction(label: 'Deshacer', onPressed: () => _chat.setBubbleVisible(true)),
           ),
         );

@@ -12,6 +12,7 @@ import '../services/places_repository.dart';
 import '../theme/app_colors.dart';
 import '../theme/theme_controller.dart';
 import '../utils/text_utils.dart';
+import '../widgets/chat_shortcut_button.dart';
 import 'place_detail_screen.dart';
 
 /// Pestaña "Mapa": lugares, hoteles y restaurantes con Google Maps.
@@ -744,6 +745,8 @@ class _MapSearchBar extends StatelessWidget {
                   icon: const Icon(Icons.close_rounded),
                   onPressed: onClear,
                 ),
+              // Acceso a Mictlan aunque la burbuja flotante esté oculta.
+              const ChatShortcutButton(),
               IconButton(
                 tooltip: isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro',
                 icon: Icon(

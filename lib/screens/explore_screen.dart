@@ -8,6 +8,7 @@ import '../services/places_repository.dart';
 import '../theme/app_colors.dart';
 import '../theme/theme_controller.dart';
 import '../utils/text_utils.dart';
+import '../widgets/chat_shortcut_button.dart';
 import '../widgets/place_card.dart';
 
 /// Pestaña "Explorar": buscador, filtros por categoría y estado, y lista de lugares.
@@ -317,6 +318,8 @@ class _Header extends StatelessWidget {
             ],
           ),
         ),
+        // Acceso a Mictlan aunque la burbuja flotante esté oculta.
+        const ChatShortcutButton(),
         IconButton(
           tooltip: isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro',
           onPressed: () => themeController.toggle(theme.brightness),
